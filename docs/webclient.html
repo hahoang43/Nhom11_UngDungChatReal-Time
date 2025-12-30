@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Real-Time (WebSocket)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+        }
+
+        #chatbox {
+            width: 400px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #aaa;
+            padding: 20px;
+        }
+
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: #fafafa;
+            margin-bottom: 10px;
+        }
+
+        #input {
+            width: 80%;
+            padding: 8px;
+        }
+
+        #send {
+            width: 18%;
+            padding: 8px;
+            background: #2196F3;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+        }
+
+        #username {
+            width: 60%;
+            padding: 8px;
+        }
+
+        #login {
+            width: 35%;
+            padding: 8px;
+            background: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chatbox">
+        <div id="loginArea">
+            <input id="username" type="text" placeholder="Enter your name" />
+            <button id="login">Login</button>
+        </div>
+        <div id="chatArea" style="display:none;">
+            <div id="messages"></div>
+            <input id="input" type="text" placeholder="Type a message..." />
+            <button id="send">Send</button>
+        </div>
+    </div>
+    <script>
+        let ws = null;
+        let username = "";
+
+        function appendMessage(msg) {
+            const messages = document.getElementById('messages');
+            messages.innerHTML += msg + '<br>';
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        document.getElementById('login').onclick = function () {
+            username = document.getElementById('username').value.trim();
+            if (!username) {
+                alert('Please enter your name!');
+                return;
+            }
+            ws = new WebSocket('ws://localhost:5555');
+            ws.onopen = function () {
+                // Send login message as JSON
+                ws.send(JSON.stringify({ type: 'LOGIN', payload: username }));
+                document.getElementById('loginArea').style.display = 'none';
+                document.getElementById('chatArea').style.display = '';
+            };
+            ws.onmessage = function (event) {
+                try {
+                    let data = JSON.parse(event.data);
+                    if (data.type === 'TEXT') {
+                        appendMessage(data.payload);
+                    }
+                } catch (e) {
+                    appendMessage(event.data);
+                }
+            };
+            ws.onclose = function () {
+                appendMessage('<span style="color:red">Disconnected from server.</span>');
+            };
+        };
+
+        document.getElementById('send').onclick = function () {
+            sendMsg();
+        };
+        document.getElementById('input').onkeydown = function (e) {
+            if (e.key === 'Enter') sendMsg();
+        };
+        function sendMsg() {
+            const input = document.getElementById('input');
+            const msg = input.value.trim();
+            if (msg && ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({ type: 'TEXT', payload: msg }));
+                appendMessage('You: ' + msg);
+                input.value = '';
+            }
+        }
+    </script>
+</body>
+
+</html>
