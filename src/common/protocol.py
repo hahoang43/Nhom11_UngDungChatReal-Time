@@ -8,6 +8,7 @@ encoding = 'utf-8'
 
 # Message Types
 MSG_LOGIN = "LOGIN"
+MSG_REGISTER = "REGISTER"
 MSG_TEXT = "TEXT"
 MSG_EXIT = "EXIT"
 

@@ -53,6 +53,8 @@ class ChatServer:
         self.running = False
         if self.server_socket:
             self.server_socket.close()
+        if self.db:
+            self.db.close()
         print("[SERVER] Server stopped.")
 
     def handle_client(self, client_socket):
@@ -90,28 +92,116 @@ class ChatServer:
                     except json.JSONDecodeError:
                         pass
 
-            if request and request.get('type') == protocol.MSG_LOGIN:
-                username = request.get('payload')
+            # Handle LOGIN or REGISTER request
+            if request and request.get('type') in [protocol.MSG_LOGIN, protocol.MSG_REGISTER]:
+                msg_type = request.get('type')
+                payload = request.get('payload')
                 
-                # Register/Login logic (Simplified: Auto-register if not exists)
-                if not self.db.login_user(username, "password"): # Dummy password check for now
-                    self.db.register_user(username, "password")
-
-                with self.lock:
-                    self.clients[client_socket] = username
+                # Support both old format (just username) and new format (dict with username/password)
+                if isinstance(payload, dict):
+                    username = payload.get('username', '')
+                    password = payload.get('password', '')
+                else:
+                    # Backward compatibility: if payload is just a string, treat as username
+                    username = payload if payload else ''
+                    password = 'default'  # Default password for backward compatibility
                 
-                print(f"[LOGIN] User '{username}' logged in via {client_type.upper()}.")
-                
-                # Send history to the new user
-                history = self.db.get_history(20)
-                for sender, content, timestamp in history:
-                    history_msg = {'type': protocol.MSG_TEXT, 'payload': f"[{timestamp}] {sender}: {content}"}
+                if not username:
+                    error_msg = {'type': 'ERROR', 'payload': 'Username is required'}
                     if client_type == 'tcp':
-                        protocol.send_json(client_socket, history_msg)
+                        protocol.send_json(client_socket, error_msg)
                     else:
-                        websocket_handler.send_frame(client_socket, json.dumps(history_msg))
+                        websocket_handler.send_frame(client_socket, json.dumps(error_msg))
+                    client_socket.close()
+                    return
+                
+                login_success = False
+                
+                if msg_type == protocol.MSG_REGISTER:
+                    # Registration
+                    if self.db.user_exists(username):
+                        error_msg = {'type': 'ERROR', 'payload': 'Username already exists'}
+                        if client_type == 'tcp':
+                            protocol.send_json(client_socket, error_msg)
+                        else:
+                            websocket_handler.send_frame(client_socket, json.dumps(error_msg))
+                        client_socket.close()
+                        return
+                    else:
+                        if self.db.register_user(username, password):
+                            login_success = True
+                            print(f"[REGISTER] New user '{username}' registered via {client_type.upper()}.")
+                        else:
+                            error_msg = {'type': 'ERROR', 'payload': 'Registration failed'}
+                            if client_type == 'tcp':
+                                protocol.send_json(client_socket, error_msg)
+                            else:
+                                websocket_handler.send_frame(client_socket, json.dumps(error_msg))
+                            client_socket.close()
+                            return
+                else:
+                    # Login
+                    if self.db.user_exists(username):
+                        if self.db.login_user(username, password):
+                            login_success = True
+                        else:
+                            error_msg = {'type': 'ERROR', 'payload': 'Invalid username or password'}
+                            if client_type == 'tcp':
+                                protocol.send_json(client_socket, error_msg)
+                            else:
+                                websocket_handler.send_frame(client_socket, json.dumps(error_msg))
+                            client_socket.close()
+                            return
+                    else:
+                        # Auto-register for backward compatibility (if no password provided or default password)
+                        if password == 'default' or not password:
+                            if self.db.register_user(username, password or 'default'):
+                                login_success = True
+                                print(f"[AUTO-REGISTER] User '{username}' auto-registered via {client_type.upper()}.")
+                            else:
+                                error_msg = {'type': 'ERROR', 'payload': 'Auto-registration failed'}
+                                if client_type == 'tcp':
+                                    protocol.send_json(client_socket, error_msg)
+                                else:
+                                    websocket_handler.send_frame(client_socket, json.dumps(error_msg))
+                                client_socket.close()
+                                return
+                        else:
+                            error_msg = {'type': 'ERROR', 'payload': 'User does not exist. Please register first.'}
+                            if client_type == 'tcp':
+                                protocol.send_json(client_socket, error_msg)
+                            else:
+                                websocket_handler.send_frame(client_socket, json.dumps(error_msg))
+                            client_socket.close()
+                            return
+                
+                if login_success:
+                    with self.lock:
+                        self.clients[client_socket] = username
+                    
+                    print(f"[LOGIN] User '{username}' logged in via {client_type.upper()}.")
+                    
+                    # Send success message
+                    success_msg = {'type': 'LOGIN_SUCCESS', 'payload': f'Welcome {username}!'}
+                    if client_type == 'tcp':
+                        protocol.send_json(client_socket, success_msg)
+                    else:
+                        websocket_handler.send_frame(client_socket, json.dumps(success_msg))
+                    
+                    # Send chat history to the new user
+                    history = self.db.get_history(20, message_type='public', username=username)
+                    for row in history:
+                        # Access Row objects by column name
+                        sender = row['sender']
+                        content = row['content']
+                        timestamp = row['timestamp']
+                        history_msg = {'type': protocol.MSG_TEXT, 'payload': f"[{timestamp}] {sender}: {content}"}
+                        if client_type == 'tcp':
+                            protocol.send_json(client_socket, history_msg)
+                        else:
+                            websocket_handler.send_frame(client_socket, json.dumps(history_msg))
 
-                self.broadcast({'type': protocol.MSG_TEXT, 'payload': f"Server: {username} has joined the chat."})
+                    self.broadcast({'type': protocol.MSG_TEXT, 'payload': f"Server: {username} has joined the chat."})
             else:
                 print(f"[ERROR] Invalid login attempt from {client_type}.")
                 client_socket.close()
@@ -145,8 +235,8 @@ class ChatServer:
                     content = message.get('payload')
                     print(f"[{username}] {content}")
                     
-                    # Save to DB
-                    self.db.save_message(username, content)
+                    # Save to DB (public message)
+                    self.db.save_message(username, content, message_type='public')
 
                     # Broadcast to others
                     self.broadcast({
