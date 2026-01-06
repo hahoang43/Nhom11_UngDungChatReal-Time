@@ -7,20 +7,30 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from src.common import protocol
+from src.common.utils import AESEncryption
 from src.server import websocket_handler
 from src.server.db import Database
 import json
+import os
+import base64
+import threading
 
 class ChatServer:
-    def __init__(self, host='0.0.0.0', port=protocol.PORT):
+    def __init__(self, host='0.0.0.0', port=protocol.PORT, use_encryption=True):
         self.host = host
         self.port = port
         self.server_socket = None
         self.clients = {} # Dictionary to map socket -> username
         self.client_types = {} # Dictionary to map socket -> 'tcp' or 'ws'
+        self.client_encryption = {} # Dictionary to map socket -> AESEncryption object
+        self.file_transfers = {} # Dictionary to track file transfers: socket -> file_data
         self.db = Database()
         self.lock = threading.Lock()
         self.running = True
+        self.use_encryption = use_encryption
+        # Tạo thư mục lưu file
+        self.files_dir = os.path.join(os.path.dirname(__file__), 'received_files')
+        os.makedirs(self.files_dir, exist_ok=True)
 
     def start(self):
         """Starts the server listening loop"""
@@ -178,6 +188,9 @@ class ChatServer:
                 if login_success:
                     with self.lock:
                         self.clients[client_socket] = username
+                        # Setup encryption cho client này
+                        if self.use_encryption:
+                            self.client_encryption[client_socket] = AESEncryption(password=password)
                     
                     print(f"[LOGIN] User '{username}' logged in via {client_type.upper()}.")
                     
@@ -233,16 +246,90 @@ class ChatServer:
                 
                 if message.get('type') == protocol.MSG_TEXT:
                     content = message.get('payload')
+                    is_encrypted = message.get('encrypted', False)
+                    
+                    # Giải mã nếu cần
+                    if is_encrypted:
+                        encryption = self.client_encryption.get(client_socket)
+                        if encryption:
+                            try:
+                                content = encryption.decrypt(content)
+                            except Exception as e:
+                                print(f"[ERROR] Decryption failed for {username}: {e}")
+                                content = "[Lỗi giải mã tin nhắn]"
+                    
                     print(f"[{username}] {content}")
                     
-                    # Save to DB (public message)
+                    # Save to DB (public message) - lưu plaintext
                     self.db.save_message(username, content, message_type='public')
 
-                    # Broadcast to others
+                    # Broadcast to others (mã hóa lại cho từng client)
                     self.broadcast({
                         'type': protocol.MSG_TEXT, 
-                        'payload': f"{username}: {content}"
+                        'payload': f"{username}: {content}",
+                        'encrypted': False  # Server sẽ mã hóa cho từng client
                     }, exclude_socket=client_socket)
+                
+                elif message.get('type') == protocol.MSG_FILE_REQUEST:
+                    # Xử lý file request
+                    file_info = message.get('payload', {})
+                    filename = file_info.get('filename')
+                    filesize = file_info.get('filesize')
+                    receiver = file_info.get('receiver')
+                    
+                    print(f"[FILE] {username} sending file: {filename} ({filesize} bytes)")
+                    
+                    # Khởi tạo file transfer
+                    with self.lock:
+                        self.file_transfers[client_socket] = {
+                            'sender': username,
+                            'filename': filename,
+                            'filesize': filesize,
+                            'receiver': receiver,
+                            'chunks': [],
+                            'total_chunks': 0
+                        }
+                
+                elif message.get('type') == protocol.MSG_FILE_CHUNK:
+                    # Nhận chunk của file
+                    chunk_data = message.get('payload', {})
+                    chunk_num = chunk_data.get('chunk_num', 0)
+                    chunk_b64 = chunk_data.get('data', '')
+                    
+                    with self.lock:
+                        if client_socket in self.file_transfers:
+                            self.file_transfers[client_socket]['chunks'].append((chunk_num, chunk_b64))
+                            self.file_transfers[client_socket]['total_chunks'] += 1
+                
+                elif message.get('type') == protocol.MSG_FILE_END:
+                    # Kết thúc file transfer
+                    with self.lock:
+                        if client_socket in self.file_transfers:
+                            file_data = self.file_transfers[client_socket]
+                            filepath = self._save_received_file(file_data, username)
+                            
+                            if filepath:
+                                # Lưu file info vào database
+                                file_msg = f"📎 File: {file_data['filename']} ({self._format_file_size(file_data['filesize'])})"
+                                self.db.save_message(username, file_msg, message_type='public')
+                                
+                                # Broadcast file info đến tất cả clients (bao gồm cả người gửi)
+                                file_info = {
+                                    'type': protocol.MSG_FILE,
+                                    'payload': {
+                                        'sender': username,
+                                        'filename': file_data['filename'],
+                                        'filesize': file_data['filesize'],
+                                        'filepath': filepath,  # Đường dẫn trên server
+                                        'message': f"{username} đã gửi file: {file_data['filename']}"
+                                    },
+                                    'encrypted': False
+                                }
+                                
+                                # Broadcast đến tất cả clients
+                                self.broadcast_file_info(file_info)
+                            
+                            del self.file_transfers[client_socket]
 
         except Exception as e:
             print(f"[ERROR] Error handling client {username}: {e}")
@@ -253,6 +340,10 @@ class ChatServer:
                     del self.clients[client_socket]
                 if client_socket in self.client_types:
                     del self.client_types[client_socket]
+                if client_socket in self.client_encryption:
+                    del self.client_encryption[client_socket]
+                if client_socket in self.file_transfers:
+                    del self.file_transfers[client_socket]
             
             client_socket.close()
             if username:
@@ -265,12 +356,26 @@ class ChatServer:
             for client_sock in list(self.clients.keys()):
                 if client_sock != exclude_socket:
                     c_type = self.client_types.get(client_sock, 'tcp')
+                    
+                    # Mã hóa tin nhắn cho client này nếu cần
+                    msg_to_send = message_dict.copy()
+                    if self.use_encryption and msg_to_send.get('type') == protocol.MSG_TEXT:
+                        encryption = self.client_encryption.get(client_sock)
+                        if encryption and not msg_to_send.get('encrypted', False):
+                            try:
+                                original_payload = msg_to_send['payload']
+                                encrypted_payload = encryption.encrypt(original_payload)
+                                msg_to_send['payload'] = encrypted_payload
+                                msg_to_send['encrypted'] = True
+                            except Exception as e:
+                                print(f"[ERROR] Encryption failed: {e}")
+                    
                     try:
                         if c_type == 'tcp':
-                            protocol.send_json(client_sock, message_dict)
+                            protocol.send_json(client_sock, msg_to_send)
                         else:
                             # Send as JSON string in a WS frame
-                            websocket_handler.send_frame(client_sock, json.dumps(message_dict))
+                            websocket_handler.send_frame(client_sock, json.dumps(msg_to_send))
                     except:
                         # If sending fails, assume client disconnected
                         client_sock.close()
@@ -278,6 +383,61 @@ class ChatServer:
                             del self.clients[client_sock]
                         if client_sock in self.client_types:
                             del self.client_types[client_sock]
+                        if client_sock in self.client_encryption:
+                            del self.client_encryption[client_sock]
+    
+    def _save_received_file(self, file_data, username):
+        """Lưu file đã nhận được"""
+        try:
+            # Sắp xếp chunks theo thứ tự
+            chunks = sorted(file_data['chunks'], key=lambda x: x[0])
+            
+            # Tạo tên file với timestamp để tránh trùng
+            from datetime import datetime
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            safe_filename = f"{timestamp}_{file_data['filename']}"
+            filepath = os.path.join(self.files_dir, safe_filename)
+            
+            # Ghép các chunks lại
+            with open(filepath, 'wb') as f:
+                for chunk_num, chunk_b64 in chunks:
+                    chunk_data = base64.b64decode(chunk_b64)
+                    f.write(chunk_data)
+            
+            print(f"[FILE] Saved file from {username}: {filepath}")
+            return filepath
+        except Exception as e:
+            print(f"[ERROR] Failed to save file: {e}")
+            return None
+    
+    def _format_file_size(self, size_bytes):
+        """Format file size thành string dễ đọc"""
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        elif size_bytes < 1024 * 1024:
+            return f"{size_bytes / 1024:.2f} KB"
+        else:
+            return f"{size_bytes / (1024 * 1024):.2f} MB"
+    
+    def broadcast_file_info(self, file_info_dict):
+        """Broadcast file info đến tất cả clients"""
+        with self.lock:
+            for client_sock in list(self.clients.keys()):
+                c_type = self.client_types.get(client_sock, 'tcp')
+                try:
+                    if c_type == 'tcp':
+                        protocol.send_json(client_sock, file_info_dict)
+                    else:
+                        websocket_handler.send_frame(client_sock, json.dumps(file_info_dict))
+                except:
+                    # If sending fails, assume client disconnected
+                    client_sock.close()
+                    if client_sock in self.clients:
+                        del self.clients[client_sock]
+                    if client_sock in self.client_types:
+                        del self.client_types[client_sock]
+                    if client_sock in self.client_encryption:
+                        del self.client_encryption[client_sock]
 
 if __name__ == "__main__":
     server = ChatServer()
