@@ -37,6 +37,7 @@
 
 ### Hùng: Protocol Design & Client Networking
 *   **Nhiệm vụ**:
+    *   Thiết kế giao diện Websocket
     *   Thiết kế giao thức giao tiếp (Protocol): Định dạng tin nhắn (JSON), các loại tin (LOGIN, MESSAGE, PRIVATE, LOGOUT).
     *   Xử lý đóng gói và giải mã dữ liệu (Serialization/Deserialization).
     *   Viết logic mạng cho Client (Kết nối đến Server, lắng nghe tin nhắn đến).
