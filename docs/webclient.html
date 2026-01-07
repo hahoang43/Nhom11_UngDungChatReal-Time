@@ -107,6 +107,38 @@
             font-size: 14px;
         }
 
+        .tab-buttons {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: #7f8c8d;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .auth-form {
+            animation: fadeIn 0.3s ease-in;
+        }
+
         .input-group {
             position: relative;
             margin-bottom: 20px;
@@ -354,17 +386,54 @@
         <div id="loginArea" class="login-area">
             <div class="error-message" id="errorMessage"></div>
             <h2 class="login-title">Chào mừng!</h2>
-            <p class="login-subtitle">Nhập tên của bạn để bắt đầu trò chuyện</p>
+            <p class="login-subtitle">Đăng ký tài khoản mới hoặc đăng nhập</p>
 
-            <div class="input-group">
-                <i class="fas fa-user"></i>
-                <input type="text" id="username" class="input-field" placeholder="Tên của bạn..." maxlength="20">
+            <!-- Tab buttons -->
+            <div class="tab-buttons">
+                <button id="loginTab" class="tab-btn active">Đăng Nhập</button>
+                <button id="registerTab" class="tab-btn">Đăng Ký</button>
             </div>
 
-            <button id="loginBtn" class="btn btn-primary">
-                <span id="loginText">Bắt Đầu Chat</span>
-                <span class="loading" id="loginLoading" style="display: none;"></span>
-            </button>
+            <!-- Login Form -->
+            <div id="loginForm" class="auth-form">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="loginUsername" class="input-field" placeholder="Tên đăng nhập" maxlength="20">
+                </div>
+
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="loginPassword" class="input-field" placeholder="Mật khẩu" maxlength="50">
+                </div>
+
+                <button id="loginBtn" class="btn btn-primary">
+                    <span id="loginText">Đăng Nhập</span>
+                    <span class="loading" id="loginLoading" style="display: none;"></span>
+                </button>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" class="auth-form" style="display: none;">
+                <div class="input-group">
+                    <i class="fas fa-user-plus"></i>
+                    <input type="text" id="registerUsername" class="input-field" placeholder="Tên đăng nhập" maxlength="20">
+                </div>
+
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="registerPassword" class="input-field" placeholder="Mật khẩu" maxlength="50">
+                </div>
+
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="registerConfirmPassword" class="input-field" placeholder="Xác nhận mật khẩu" maxlength="50">
+                </div>
+
+                <button id="registerBtn" class="btn btn-primary">
+                    <span id="registerText">Đăng Ký</span>
+                    <span class="loading" id="registerLoading" style="display: none;"></span>
+                </button>
+            </div>
         </div>
 
         <div id="chatArea" class="chat-area" style="display: none;">
@@ -392,10 +461,25 @@
         const elements = {
             loginArea: document.getElementById('loginArea'),
             chatArea: document.getElementById('chatArea'),
-            username: document.getElementById('username'),
+            // Login form
+            loginUsername: document.getElementById('loginUsername'),
+            loginPassword: document.getElementById('loginPassword'),
             loginBtn: document.getElementById('loginBtn'),
             loginText: document.getElementById('loginText'),
             loginLoading: document.getElementById('loginLoading'),
+            // Register form
+            registerUsername: document.getElementById('registerUsername'),
+            registerPassword: document.getElementById('registerPassword'),
+            registerConfirmPassword: document.getElementById('registerConfirmPassword'),
+            registerBtn: document.getElementById('registerBtn'),
+            registerText: document.getElementById('registerText'),
+            registerLoading: document.getElementById('registerLoading'),
+            // Tabs
+            loginTab: document.getElementById('loginTab'),
+            registerTab: document.getElementById('registerTab'),
+            loginForm: document.getElementById('loginForm'),
+            registerForm: document.getElementById('registerForm'),
+            // Other
             messages: document.getElementById('messages'),
             messageInput: document.getElementById('messageInput'),
             sendBtn: document.getElementById('sendBtn'),
@@ -439,7 +523,7 @@
             elements.messages.scrollTop = elements.messages.scrollHeight;
         }
 
-        function connectWebSocket() {
+        function connectWebSocket(action = 'login', username = '', password = '') {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 return;
             }
@@ -452,10 +536,11 @@
                     updateConnectionStatus(true);
                     reconnectAttempts = 0;
 
-                    // Send login message
+                    // Send login or register message
+                    const messageType = action === 'register' ? 'REGISTER' : 'LOGIN';
                     ws.send(JSON.stringify({
-                        type: 'LOGIN',
-                        payload: { username: username, password: 'default' }
+                        type: messageType,
+                        payload: { username: username, password: password }
                     }));
                 };
 
@@ -472,11 +557,8 @@
 
                             case 'ERROR':
                                 showError(data.payload);
-                                if (elements.loginArea.style.display !== 'none') {
-                                    elements.loginLoading.style.display = 'none';
-                                    elements.loginText.style.display = 'inline';
-                                    elements.loginBtn.disabled = false;
-                                }
+                                // Reset loading states
+                                resetLoadingStates();
                                 break;
 
                             case 'TEXT':
@@ -519,12 +601,24 @@
                 ws.onerror = function(error) {
                     console.error('WebSocket error:', error);
                     showError('Lỗi kết nối WebSocket');
+                    resetLoadingStates();
                 };
 
             } catch (error) {
                 console.error('Failed to create WebSocket:', error);
                 showError('Không thể kết nối đến server');
+                resetLoadingStates();
             }
+        }
+
+        function resetLoadingStates() {
+            elements.loginLoading.style.display = 'none';
+            elements.loginText.style.display = 'inline';
+            elements.loginBtn.disabled = false;
+
+            elements.registerLoading.style.display = 'none';
+            elements.registerText.style.display = 'inline';
+            elements.registerBtn.disabled = false;
         }
 
         function sendMessage() {
@@ -548,9 +642,11 @@
         }
 
         function login() {
-            username = elements.username.value.trim();
-            if (!username) {
-                showError('Vui lòng nhập tên của bạn!');
+            const username = elements.loginUsername.value.trim();
+            const password = elements.loginPassword.value.trim();
+
+            if (!username || !password) {
+                showError('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!');
                 return;
             }
 
@@ -559,14 +655,82 @@
             elements.loginLoading.style.display = 'inline-block';
             elements.loginBtn.disabled = true;
 
-            // Connect WebSocket
-            connectWebSocket();
+            // Store username globally
+            window.currentUsername = username;
+
+            // Connect WebSocket with login
+            connectWebSocket('login', username, password);
+        }
+
+        function register() {
+            const username = elements.registerUsername.value.trim();
+            const password = elements.registerPassword.value.trim();
+            const confirmPassword = elements.registerConfirmPassword.value.trim();
+
+            if (!username || !password || !confirmPassword) {
+                showError('Vui lòng nhập đầy đủ thông tin!');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('Mật khẩu xác nhận không khớp!');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Mật khẩu phải có ít nhất 6 ký tự!');
+                return;
+            }
+
+            // Show loading state
+            elements.registerText.style.display = 'none';
+            elements.registerLoading.style.display = 'inline-block';
+            elements.registerBtn.disabled = true;
+
+            // Store username globally
+            window.currentUsername = username;
+
+            // Connect WebSocket with register
+            connectWebSocket('register', username, password);
+        }
+
+        function switchTab(tab) {
+            // Update tab buttons
+            elements.loginTab.classList.toggle('active', tab === 'login');
+            elements.registerTab.classList.toggle('active', tab === 'register');
+
+            // Update forms
+            elements.loginForm.style.display = tab === 'login' ? 'block' : 'none';
+            elements.registerForm.style.display = tab === 'register' ? 'block' : 'none';
+
+            // Clear error messages
+            elements.errorMessage.style.display = 'none';
+
+            // Reset loading states
+            resetLoadingStates();
         }
 
         // Event listeners
+        elements.loginTab.addEventListener('click', () => switchTab('login'));
+        elements.registerTab.addEventListener('click', () => switchTab('register'));
+
         elements.loginBtn.addEventListener('click', login);
-        elements.username.addEventListener('keydown', (e) => {
+        elements.loginUsername.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') login();
+        });
+        elements.loginPassword.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') login();
+        });
+
+        elements.registerBtn.addEventListener('click', register);
+        elements.registerUsername.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') register();
+        });
+        elements.registerPassword.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') register();
+        });
+        elements.registerConfirmPassword.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') register();
         });
 
         elements.sendBtn.addEventListener('click', sendMessage);
@@ -574,8 +738,8 @@
             if (e.key === 'Enter') sendMessage();
         });
 
-        // Auto-focus username input
-        elements.username.focus();
+        // Auto-focus first input
+        elements.loginUsername.focus();
 
         // Update user count (mock)
         setInterval(() => {
