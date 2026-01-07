@@ -1,53 +1,594 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
-    <title>Chat Real-Time (WebSocket)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💬 Chat Real-Time | Nhóm 11</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f4f4;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        #chatbox {
-            width: 400px;
-            margin: 40px auto;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px #aaa;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
         }
 
-        #messages {
-            height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            background: #fafafa;
+        .chat-container {
+            width: 100%;
+            max-width: 450px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+            border: 2px solid white;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #2ed573;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .login-area, .chat-area {
+            padding: 30px;
+        }
+
+        .login-area {
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 20px;
+            color: #2c3e50;
             margin-bottom: 10px;
+            font-weight: 600;
         }
 
-        #input {
-            width: 80%;
-            padding: 8px;
+        .login-subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 14px;
         }
 
-        #send {
-            width: 18%;
-            padding: 8px;
-            background: #2196F3;
-            color: #fff;
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #bdc3c7;
+            font-size: 16px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 15px 30px;
             border: none;
-            border-radius: 4px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        #username {
-            width: 60%;
-            padding: 8px;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
-        #login {
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-send {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+
+        .messages-container {
+            height: 350px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ecf0f1;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-in;
+            position: relative;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.sent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received {
+            background: white;
+            color: #2c3e50;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.system {
+            background: #ffeaa7;
+            color: #d63031;
+            text-align: center;
+            max-width: 100%;
+            font-weight: 500;
+        }
+
+        .message.private {
+            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+            color: white;
+            border: 2px solid #fdcb6e;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .typing-indicator {
+            display: none;
+            font-style: italic;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .user-count {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .error-message {
+            background: #ff7675;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .chat-container {
+                margin: 10px;
+                max-width: none;
+            }
+
+            .login-area, .chat-area {
+                padding: 20px;
+            }
+
+            .messages-container {
+                height: 300px;
+            }
+        }
+
+        /* Scrollbar styling */
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <div class="user-count" id="userCount">
+                <i class="fas fa-users"></i> 0 online
+            </div>
+            <div class="status-indicator" id="statusIndicator"></div>
+            <h1><i class="fas fa-comments"></i> Chat Real-Time</h1>
+            <p>Nhóm 11 - UT EDU</p>
+        </div>
+
+        <div id="loginArea" class="login-area">
+            <div class="error-message" id="errorMessage"></div>
+            <h2 class="login-title">Chào mừng!</h2>
+            <p class="login-subtitle">Nhập tên của bạn để bắt đầu trò chuyện</p>
+
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="username" class="input-field" placeholder="Tên của bạn..." maxlength="20">
+            </div>
+
+            <button id="loginBtn" class="btn btn-primary">
+                <span id="loginText">Bắt Đầu Chat</span>
+                <span class="loading" id="loginLoading" style="display: none;"></span>
+            </button>
+        </div>
+
+        <div id="chatArea" class="chat-area" style="display: none;">
+            <div class="messages-container" id="messages"></div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <i class="fas fa-circle-notch fa-spin"></i> Đang nhập...
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="messageInput" class="message-input" placeholder="Nhập tin nhắn..." maxlength="500">
+                <button id="sendBtn" class="btn btn-send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let username = "";
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        const elements = {
+            loginArea: document.getElementById('loginArea'),
+            chatArea: document.getElementById('chatArea'),
+            username: document.getElementById('username'),
+            loginBtn: document.getElementById('loginBtn'),
+            loginText: document.getElementById('loginText'),
+            loginLoading: document.getElementById('loginLoading'),
+            messages: document.getElementById('messages'),
+            messageInput: document.getElementById('messageInput'),
+            sendBtn: document.getElementById('sendBtn'),
+            statusIndicator: document.getElementById('statusIndicator'),
+            errorMessage: document.getElementById('errorMessage'),
+            typingIndicator: document.getElementById('typingIndicator'),
+            userCount: document.getElementById('userCount')
+        };
+
+        function showError(message) {
+            elements.errorMessage.textContent = message;
+            elements.errorMessage.style.display = 'block';
+            setTimeout(() => {
+                elements.errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function updateConnectionStatus(connected) {
+            elements.statusIndicator.classList.toggle('connected', connected);
+            if (connected) {
+                elements.statusIndicator.title = 'Đã kết nối';
+            } else {
+                elements.statusIndicator.title = 'Mất kết nối';
+            }
+        }
+
+        function appendMessage(content, type = 'received', isSystem = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            if (isSystem) {
+                messageDiv.classList.add('system');
+            }
+
+            if (content.includes('[PRIVATE]') || content.includes('[Bạn ->') || content.includes('-> Bạn]')) {
+                messageDiv.classList.add('private');
+            }
+
+            messageDiv.innerHTML = content;
+            elements.messages.appendChild(messageDiv);
+            elements.messages.scrollTop = elements.messages.scrollHeight;
+        }
+
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                return;
+            }
+
+            try {
+                ws = new WebSocket('ws://localhost:5555');
+
+                ws.onopen = function() {
+                    console.log('WebSocket connected');
+                    updateConnectionStatus(true);
+                    reconnectAttempts = 0;
+
+                    // Send login message
+                    ws.send(JSON.stringify({
+                        type: 'LOGIN',
+                        payload: { username: username, password: 'default' }
+                    }));
+                };
+
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+
+                        switch(data.type) {
+                            case 'LOGIN_SUCCESS':
+                                elements.loginArea.style.display = 'none';
+                                elements.chatArea.style.display = 'block';
+                                appendMessage(`🎉 ${data.payload}`, 'system', true);
+                                break;
+
+                            case 'ERROR':
+                                showError(data.payload);
+                                if (elements.loginArea.style.display !== 'none') {
+                                    elements.loginLoading.style.display = 'none';
+                                    elements.loginText.style.display = 'inline';
+                                    elements.loginBtn.disabled = false;
+                                }
+                                break;
+
+                            case 'TEXT':
+                                if (data.payload.includes('has joined') || data.payload.includes('has left')) {
+                                    appendMessage(data.payload, 'system', true);
+                                } else {
+                                    appendMessage(data.payload, 'received');
+                                }
+                                break;
+
+                            case 'PRIVATE':
+                                const privateMsg = `[PRIVATE] ${data.payload.sender}: ${data.payload.content}`;
+                                appendMessage(privateMsg, 'private', false);
+                                break;
+
+                            default:
+                                appendMessage(event.data, 'received');
+                        }
+                    } catch (e) {
+                        // Fallback for non-JSON messages
+                        appendMessage(event.data, 'received');
+                    }
+                };
+
+                ws.onclose = function() {
+                    console.log('WebSocket disconnected');
+                    updateConnectionStatus(false);
+                    appendMessage('<i class="fas fa-exclamation-triangle"></i> Mất kết nối với server', 'system', true);
+
+                    // Auto reconnect
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        setTimeout(() => {
+                            console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})`);
+                            connectWebSocket();
+                        }, 2000 * reconnectAttempts);
+                    }
+                };
+
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    showError('Lỗi kết nối WebSocket');
+                };
+
+            } catch (error) {
+                console.error('Failed to create WebSocket:', error);
+                showError('Không thể kết nối đến server');
+            }
+        }
+
+        function sendMessage() {
+            const message = elements.messageInput.value.trim();
+            if (!message || !ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+
+            // Send message
+            ws.send(JSON.stringify({
+                type: 'TEXT',
+                payload: message
+            }));
+
+            // Show sent message
+            appendMessage(`Bạn: ${message}`, 'sent');
+
+            // Clear input
+            elements.messageInput.value = '';
+            elements.messageInput.focus();
+        }
+
+        function login() {
+            username = elements.username.value.trim();
+            if (!username) {
+                showError('Vui lòng nhập tên của bạn!');
+                return;
+            }
+
+            // Show loading state
+            elements.loginText.style.display = 'none';
+            elements.loginLoading.style.display = 'inline-block';
+            elements.loginBtn.disabled = true;
+
+            // Connect WebSocket
+            connectWebSocket();
+        }
+
+        // Event listeners
+        elements.loginBtn.addEventListener('click', login);
+        elements.username.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') login();
+        });
+
+        elements.sendBtn.addEventListener('click', sendMessage);
+        elements.messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Auto-focus username input
+        elements.username.focus();
+
+        // Update user count (mock)
+        setInterval(() => {
+            const onlineCount = Math.floor(Math.random() * 10) + 1;
+            elements.userCount.innerHTML = `<i class="fas fa-users"></i> ${onlineCount} online`;
+        }, 5000);
+
+        // Initial status
+        updateConnectionStatus(false);
+    </script>
+</body>
+
+</html>
             width: 35%;
             padding: 8px;
             background: #4CAF50;
