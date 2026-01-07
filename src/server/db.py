@@ -3,6 +3,7 @@ import os
 import hashlib
 from datetime import datetime
 from contextlib import contextmanager
+import json
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'chat.db')
 
@@ -388,6 +389,60 @@ class Database:
         else:
             cursor.execute("SELECT COUNT(*) FROM messages")
         return cursor.fetchone()[0]
+
+    def export_messages(self, filepath):
+        """Xuất tất cả tin nhắn ra file JSON"""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM messages ORDER BY timestamp")
+        messages = cursor.fetchall()
+        
+        # Convert to list of dicts
+        messages_list = []
+        for msg in messages:
+            messages_list.append({
+                'id': msg['id'],
+                'sender': msg['sender'],
+                'receiver': msg['receiver'],
+                'content': msg['content'],
+                'message_type': msg['message_type'],
+                'timestamp': msg['timestamp']
+            })
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(messages_list, f, ensure_ascii=False, indent=2)
+        
+        return len(messages_list)
+
+    def import_messages(self, filepath):
+        """Nhập tin nhắn từ file JSON"""
+        with open(filepath, 'r', encoding='utf-8') as f:
+            messages = json.load(f)
+        
+        cursor = self.conn.cursor()
+        imported_count = 0
+        
+        for msg in messages:
+            try:
+                cursor.execute('''
+                    INSERT OR IGNORE INTO messages 
+                    (id, sender, receiver, content, message_type, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    msg['id'],
+                    msg['sender'],
+                    msg['receiver'],
+                    msg['content'],
+                    msg['message_type'],
+                    msg['timestamp']
+                ))
+                if cursor.rowcount > 0:
+                    imported_count += 1
+            except Exception as e:
+                print(f"Lỗi khi import tin nhắn ID {msg.get('id')}: {e}")
+                continue
+        
+        self.conn.commit()
+        return imported_count
 
     @contextmanager
     def transaction(self):

@@ -1,8 +1,6 @@
 import tkinter as tk
-from tkinter import scrolledtext, messagebox, ttk, filedialog
+from tkinter import scrolledtext, messagebox, ttk
 import threading
-import os
-from datetime import datetime
 
 class ChatGUI:
     def __init__(self, client):
@@ -20,10 +18,6 @@ class ChatGUI:
         # Set callback for incoming messages
         self.client.on_message_received = self.on_message
         self.client.on_login_response = self.handle_login_response
-        self.client.on_file_received = self.on_file_received
-        
-        # File transfer tracking
-        self.file_transfers = {}  # filename -> {'progress': progress_bar, 'status': label, 'frame': frame}
 
     def center_window(self):
         """Center the window on screen"""
@@ -203,13 +197,7 @@ class ChatGUI:
         send_btn = tk.Button(input_frame, text="Gửi", command=self.send_message, 
                             bg="#4CAF50", fg="white", font=("Arial", 11, "bold"),
                             relief=tk.FLAT, padx=20, cursor="hand2")
-        send_btn.pack(side=tk.RIGHT, padx=(0, 5))
-        
-        # File button
-        file_btn = tk.Button(input_frame, text="📎 File", command=self.send_file_dialog,
-                            bg="#FF9800", fg="white", font=("Arial", 10, "bold"),
-                            relief=tk.FLAT, padx=15, cursor="hand2")
-        file_btn.pack(side=tk.RIGHT, padx=(0, 5))
+        send_btn.pack(side=tk.RIGHT)
         
         # Configure chat tags
         self.configure_chat_tags()
@@ -227,139 +215,6 @@ class ChatGUI:
             self.client.send_message(msg)
             self.display_message(f"You: {msg}")
             self.msg_entry.delete(0, tk.END)
-    
-    def send_file_dialog(self):
-        """Mở dialog để chọn file và gửi"""
-        filepath = filedialog.askopenfilename(
-            title="Chọn file để gửi",
-            filetypes=[("All files", "*.*")]
-        )
-        
-        if filepath:
-            try:
-                filename = os.path.basename(filepath)
-                filesize = os.path.getsize(filepath)
-                size_mb = filesize / (1024 * 1024)
-                
-                if size_mb > 10:  # Cảnh báo nếu file > 10MB
-                    if not messagebox.askyesno("Cảnh báo", 
-                        f"File {filename} có kích thước {size_mb:.2f} MB.\nBạn có muốn tiếp tục?"):
-                        return
-                
-                # Tạo progress bar trong chat
-                self._create_file_transfer_ui(filename, filesize, is_sending=True)
-                
-                # Gửi file với progress callback
-                def update_progress(sent, total):
-                    progress = (sent / total) * 100
-                    self.root.after(0, self._update_file_progress, filename, progress, sent, total)
-                
-                # Gửi file trong thread riêng để không block UI
-                def send_file_thread():
-                    success = self.client.send_file(filepath, progress_callback=update_progress)
-                    self.root.after(0, self._file_send_complete, filename, success)
-                
-                threading.Thread(target=send_file_thread, daemon=True).start()
-                
-            except Exception as e:
-                messagebox.showerror("Lỗi", f"Lỗi khi gửi file: {e}")
-    
-    def _create_file_transfer_ui(self, filename, filesize, is_sending=True):
-        """Tạo UI cho file transfer (progress bar và status)"""
-        if not hasattr(self, 'chat_area'):
-            return
-        
-        self.chat_area.config(state='normal')
-        
-        # Tạo frame cho file transfer
-        file_frame = tk.Frame(self.chat_area, bg="#E3F2FD", relief=tk.RAISED, bd=1)
-        
-        # File info
-        info_label = tk.Label(file_frame, text=f"📎 {filename} ({self._format_size(filesize)})", 
-                             font=("Arial", 9, "bold"), bg="#E3F2FD", anchor="w")
-        info_label.pack(fill=tk.X, padx=5, pady=2)
-        
-        # Progress bar
-        progress_var = tk.DoubleVar()
-        progress_bar = ttk.Progressbar(file_frame, variable=progress_var, maximum=100, length=300)
-        progress_bar.pack(fill=tk.X, padx=5, pady=2)
-        
-        # Status label
-        status_label = tk.Label(file_frame, text="Đang gửi...", font=("Arial", 8), 
-                               bg="#E3F2FD", fg="#666")
-        status_label.pack(fill=tk.X, padx=5, pady=2)
-        
-        # Lưu vào window để có thể cập nhật
-        window = self.chat_area.window_create(tk.END, window=file_frame)
-        self.chat_area.insert(tk.END, "\n")
-        
-        # Lưu reference
-        if filename not in self.file_transfers:
-            self.file_transfers[filename] = {}
-        self.file_transfers[filename] = {
-            'progress_var': progress_var,
-            'progress_bar': progress_bar,
-            'status_label': status_label,
-            'frame': file_frame,
-            'window': window,
-            'is_sending': is_sending
-        }
-        
-        self.chat_area.yview(tk.END)
-        self.chat_area.config(state='disabled')
-    
-    def _update_file_progress(self, filename, progress, sent, total):
-        """Cập nhật progress bar"""
-        if filename in self.file_transfers:
-            self.file_transfers[filename]['progress_var'].set(progress)
-            status_text = f"Đang gửi... {self._format_size(sent)} / {self._format_size(total)} ({progress:.1f}%)"
-            self.file_transfers[filename]['status_label'].config(text=status_text)
-    
-    def _file_send_complete(self, filename, success):
-        """Cập nhật UI khi gửi file hoàn tất"""
-        if filename in self.file_transfers:
-            if success:
-                self.file_transfers[filename]['progress_var'].set(100)
-                self.file_transfers[filename]['status_label'].config(
-                    text="✓ Đã gửi thành công", fg="#4CAF50"
-                )
-                # Đổi màu frame thành xanh lá
-                self.file_transfers[filename]['frame'].config(bg="#E8F5E9")
-            else:
-                self.file_transfers[filename]['status_label'].config(
-                    text="✗ Gửi thất bại", fg="#F44336"
-                )
-                self.file_transfers[filename]['frame'].config(bg="#FFEBEE")
-    
-    def _format_size(self, size_bytes):
-        """Format file size"""
-        if size_bytes < 1024:
-            return f"{size_bytes} B"
-        elif size_bytes < 1024 * 1024:
-            return f"{size_bytes / 1024:.2f} KB"
-        else:
-            return f"{size_bytes / (1024 * 1024):.2f} MB"
-    
-    def on_file_received(self, file_data):
-        """Xử lý khi nhận được file info từ server"""
-        sender = file_data.get('sender', 'Unknown')
-        filename = file_data.get('filename', 'unknown')
-        filesize = file_data.get('filesize', 0)
-        message = file_data.get('message', f"{sender} đã gửi file: {filename}")
-        
-        # Hiển thị file info trong chat
-        self.display_message(f"{message} ({self._format_size(filesize)})")
-        
-        # Tạo UI cho file đã nhận
-        self._create_file_transfer_ui(filename, filesize, is_sending=False)
-        
-        # Đánh dấu là đã nhận
-        if filename in self.file_transfers:
-            self.file_transfers[filename]['progress_var'].set(100)
-            self.file_transfers[filename]['status_label'].config(
-                text="✓ Đã nhận", fg="#4CAF50"
-            )
-            self.file_transfers[filename]['frame'].config(bg="#E8F5E9")
 
     def on_message(self, message):
         # Update GUI from background thread safely

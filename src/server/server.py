@@ -7,7 +7,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from src.common import protocol
-from src.common.utils import AESEncryption
 from src.server import websocket_handler
 from src.server.db import Database
 import json
@@ -16,18 +15,16 @@ import base64
 import threading
 
 class ChatServer:
-    def __init__(self, host='0.0.0.0', port=protocol.PORT, use_encryption=True):
+    def __init__(self, host='0.0.0.0', port=protocol.PORT):
         self.host = host
         self.port = port
         self.server_socket = None
         self.clients = {} # Dictionary to map socket -> username
         self.client_types = {} # Dictionary to map socket -> 'tcp' or 'ws'
-        self.client_encryption = {} # Dictionary to map socket -> AESEncryption object
         self.file_transfers = {} # Dictionary to track file transfers: socket -> file_data
         self.db = Database()
         self.lock = threading.Lock()
         self.running = True
-        self.use_encryption = use_encryption
         # Tạo thư mục lưu file
         self.files_dir = os.path.join(os.path.dirname(__file__), 'received_files')
         os.makedirs(self.files_dir, exist_ok=True)
@@ -188,9 +185,6 @@ class ChatServer:
                 if login_success:
                     with self.lock:
                         self.clients[client_socket] = username
-                        # Setup encryption cho client này
-                        if self.use_encryption:
-                            self.client_encryption[client_socket] = AESEncryption(password=password)
                     
                     print(f"[LOGIN] User '{username}' logged in via {client_type.upper()}.")
                     
@@ -208,13 +202,19 @@ class ChatServer:
                         sender = row['sender']
                         content = row['content']
                         timestamp = row['timestamp']
-                        history_msg = {'type': protocol.MSG_TEXT, 'payload': f"[{timestamp}] {sender}: {content}"}
+                        history_msg = {
+                            'type': protocol.MSG_TEXT, 
+                            'payload': f"[{timestamp}] {sender}: {content}"
+                        }
                         if client_type == 'tcp':
                             protocol.send_json(client_socket, history_msg)
                         else:
                             websocket_handler.send_frame(client_socket, json.dumps(history_msg))
 
-                    self.broadcast({'type': protocol.MSG_TEXT, 'payload': f"Server: {username} has joined the chat."})
+                    self.broadcast({
+                        'type': protocol.MSG_TEXT, 
+                        'payload': f"Server: {username} has joined the chat."
+                    })
             else:
                 print(f"[ERROR] Invalid login attempt from {client_type}.")
                 client_socket.close()
@@ -246,28 +246,16 @@ class ChatServer:
                 
                 if message.get('type') == protocol.MSG_TEXT:
                     content = message.get('payload')
-                    is_encrypted = message.get('encrypted', False)
-                    
-                    # Giải mã nếu cần
-                    if is_encrypted:
-                        encryption = self.client_encryption.get(client_socket)
-                        if encryption:
-                            try:
-                                content = encryption.decrypt(content)
-                            except Exception as e:
-                                print(f"[ERROR] Decryption failed for {username}: {e}")
-                                content = "[Lỗi giải mã tin nhắn]"
                     
                     print(f"[{username}] {content}")
                     
                     # Save to DB (public message) - lưu plaintext
                     self.db.save_message(username, content, message_type='public')
 
-                    # Broadcast to others (mã hóa lại cho từng client)
+                    # Broadcast to others
                     self.broadcast({
                         'type': protocol.MSG_TEXT, 
-                        'payload': f"{username}: {content}",
-                        'encrypted': False  # Server sẽ mã hóa cho từng client
+                        'payload': f"{username}: {content}"
                     }, exclude_socket=client_socket)
                 
                 elif message.get('type') == protocol.MSG_FILE_REQUEST:
@@ -340,15 +328,16 @@ class ChatServer:
                     del self.clients[client_socket]
                 if client_socket in self.client_types:
                     del self.client_types[client_socket]
-                if client_socket in self.client_encryption:
-                    del self.client_encryption[client_socket]
                 if client_socket in self.file_transfers:
                     del self.file_transfers[client_socket]
             
             client_socket.close()
             if username:
                 print(f"[DISCONNECT] User '{username}' disconnected.")
-                self.broadcast({'type': protocol.MSG_TEXT, 'payload': f"Server: {username} has left the chat."})
+                self.broadcast({
+                    'type': protocol.MSG_TEXT, 
+                    'payload': f"Server: {username} has left the chat."
+                })
 
     def broadcast(self, message_dict, exclude_socket=None):
         """Sends a message to all connected clients (TCP and WS)"""
@@ -357,18 +346,8 @@ class ChatServer:
                 if client_sock != exclude_socket:
                     c_type = self.client_types.get(client_sock, 'tcp')
                     
-                    # Mã hóa tin nhắn cho client này nếu cần
+                    # Gửi tin nhắn đến client
                     msg_to_send = message_dict.copy()
-                    if self.use_encryption and msg_to_send.get('type') == protocol.MSG_TEXT:
-                        encryption = self.client_encryption.get(client_sock)
-                        if encryption and not msg_to_send.get('encrypted', False):
-                            try:
-                                original_payload = msg_to_send['payload']
-                                encrypted_payload = encryption.encrypt(original_payload)
-                                msg_to_send['payload'] = encrypted_payload
-                                msg_to_send['encrypted'] = True
-                            except Exception as e:
-                                print(f"[ERROR] Encryption failed: {e}")
                     
                     try:
                         if c_type == 'tcp':
@@ -383,8 +362,6 @@ class ChatServer:
                             del self.clients[client_sock]
                         if client_sock in self.client_types:
                             del self.client_types[client_sock]
-                        if client_sock in self.client_encryption:
-                            del self.client_encryption[client_sock]
     
     def _save_received_file(self, file_data, username):
         """Lưu file đã nhận được"""

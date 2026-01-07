@@ -12,7 +12,7 @@ def main():
     try:
         server.start()
     except KeyboardInterrupt:
-        print("\nStopping server...")
+        print("\nServer shutting down...")
         server.stop()
 
 if __name__ == "__main__":

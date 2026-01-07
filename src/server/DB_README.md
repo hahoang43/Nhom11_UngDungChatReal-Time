@@ -102,6 +102,20 @@ total = db.get_message_count()
 user_messages = db.get_message_count("john")
 ```
 
+#### `export_messages(filepath)`
+Xuất tất cả tin nhắn ra file JSON để chuyển sang máy khác.
+```python
+count = db.export_messages("chat_history.json")
+print(f"Đã xuất {count} tin nhắn")
+```
+
+#### `import_messages(filepath)`
+Nhập tin nhắn từ file JSON (từ máy khác).
+```python
+count = db.import_messages("chat_history.json")
+print(f"Đã nhập {count} tin nhắn")
+```
+
 ## Bảo Mật
 
 - Mật khẩu được mã hóa bằng **SHA-256** trước khi lưu vào database

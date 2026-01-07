@@ -11,10 +11,6 @@ MSG_LOGIN = "LOGIN"
 MSG_REGISTER = "REGISTER"
 MSG_TEXT = "TEXT"
 MSG_EXIT = "EXIT"
-MSG_FILE = "FILE"
-MSG_FILE_REQUEST = "FILE_REQUEST"
-MSG_FILE_CHUNK = "FILE_CHUNK"
-MSG_FILE_END = "FILE_END"
 
 def send_json(socket, data):
     """Helper to send JSON data with a fixed-length header"""
