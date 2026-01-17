@@ -5,7 +5,8 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✨ Nhom11 Chat | Real-time Connection</title>
+    <title>Chat Real-time</title>
+    <link rel="icon" href="./assets/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -516,7 +517,8 @@
         @media (max-width: 768px) {
             body {
                 padding: 0;
-                overflow: hidden; /* Prevent body scroll, handle internally */
+                overflow: hidden;
+                /* Prevent body scroll, handle internally */
             }
 
             .chat-container {
@@ -524,7 +526,8 @@
                 height: 100vh;
                 border-radius: 0;
                 max-width: none;
-                flex-direction: row; /* Keep flex row but toggle visibility */
+                flex-direction: row;
+                /* Keep flex row but toggle visibility */
             }
 
             .sidebar {
@@ -534,10 +537,12 @@
             }
 
             .chat-main {
-                display: none; /* Hidden by default on mobile */
+                display: none;
+                /* Hidden by default on mobile */
                 width: 100%;
                 height: 100vh;
-                position: absolute; /* Overlay sidebar */
+                position: absolute;
+                /* Overlay sidebar */
                 top: 0;
                 left: 0;
                 background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -552,22 +557,24 @@
             .mobile-show-chat .chat-main {
                 display: flex;
             }
-            
+
             .back-btn {
                 display: inline-flex !important;
             }
-            
+
             /* Adjust inputs for mobile */
             .input-area {
                 padding: 10px 15px;
             }
+
             .chat-input {
-                 border-radius: 20px;
+                border-radius: 20px;
             }
+
             .send-btn {
-                 width: 40px;
-                 height: 40px;
-                 border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
             }
         }
 
@@ -582,9 +589,9 @@
             padding: 5px;
             border-radius: 50%;
         }
-        
+
         .back-btn:hover {
-            background: rgba(0,0,0,0.05);
+            background: rgba(0, 0, 0, 0.05);
         }
 
         /* Toast Notification */
@@ -704,14 +711,14 @@
                 </button>
             </div>
             <div class="list-container" id="groupsList">
-                </div>
+            </div>
 
             <div class="section-title" style="margin-top: 25px;">
                 Người dùng Online
                 <span class="btn-icon-small"><i class="fa-solid fa-users"></i></span>
             </div>
             <div class="list-container" id="usersList">
-                </div>
+            </div>
         </div>
 
         <div class="chat-main">
@@ -750,7 +757,7 @@
         // --- CẤU HÌNH SERVER ---
         const SERVER_URL = "https://nhom11-ungdungchatreal-time.onrender.com/";
         let socket = null;
-        
+
         // --- File Send Logic ---
         const CHUNK_SIZE = 4096;
         document.getElementById('fileInput').addEventListener('change', async function (e) {
@@ -788,7 +795,7 @@
             };
             sendChunk();
         });
-        
+
         let myName = "";
         let currentTarget = "Public:Public"; // Type:ID
         let myGroups = new Set(); // Stores group IDs I am a member of
@@ -868,11 +875,11 @@
                     }
                 });
                 socket.on('message', (data) => handleServerMessage(data));
-                
+
                 // Trường hợp nếu socket đã sẵn sàng (đôi khi xảy ra)
-                if(socket.connected) {
-                     sendJson(type, { username, password });
-                     myName = username;
+                if (socket.connected) {
+                    sendJson(type, { username, password });
+                    myName = username;
                 }
             } else {
                 sendJson(type, { username, password });
@@ -889,7 +896,7 @@
         function handleServerMessage(data) {
             // Check nếu data là string (đôi khi socket python gửi về dạng string)
             if (typeof data === 'string') {
-                try { data = JSON.parse(data); } catch(e) {}
+                try { data = JSON.parse(data); } catch (e) { }
             }
             console.log("Recv:", data);
 
@@ -1058,15 +1065,15 @@
                 sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
             }
             appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
-            
+
             // Mobile: Switch to chat view
             if (window.innerWidth <= 768) {
                 document.getElementById('chatPanel').classList.add('mobile-show-chat');
             }
         }
-        
+
         function backToSidebar() {
-             document.getElementById('chatPanel').classList.remove('mobile-show-chat');
+            document.getElementById('chatPanel').classList.remove('mobile-show-chat');
         }
 
         // --- Actions ---
@@ -1164,4 +1171,5 @@
 
     </script>
 </body>
+
 </html>
