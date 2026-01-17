@@ -2,10 +2,10 @@
 <html lang="vi">
 
 <head>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>✨ Nhom11 Chat | Real-time Connection</title>
-    <!-- Use Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -43,7 +43,6 @@
             padding: 20px;
             color: var(--dark);
             overflow: hidden;
-            /* Prevent body scroll if possible */
         }
 
         /* Ambient Background shapes */
@@ -562,12 +561,10 @@
 </head>
 
 <body>
-    <!-- Background Elements -->
     <div class="shape shape-1"></div>
     <div class="shape shape-2"></div>
     <div class="shape shape-3"></div>
 
-    <!-- Auth Panel -->
     <div id="authPanel" class="auth-container">
         <div class="logo"><i class="fa-brands fa-rocketchat"></i></div>
         <h2 class="auth-title">Chào mừng trở lại</h2>
@@ -608,9 +605,7 @@
         <p id="authError" style="color: var(--danger); margin-top: 15px; font-size: 0.85rem; height: 1.2em;"></p>
     </div>
 
-    <!-- Chat Interface -->
     <div id="chatPanel" class="chat-container">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="user-profile">
                 <div class="avatar" id="myAvatar">U</div>
@@ -622,12 +617,8 @@
                         Online
                     </div>
                 </div>
-                <button class="btn-icon-small" title="Đăng xuất" onclick="logout()" style="color: var(--danger);">
-                    <i class="fa-solid fa-power-off"></i>
-                </button>
             </div>
 
-            <!-- Groups Section -->
             <div class="section-title">
                 Khám phá Nhóm
                 <button class="btn-icon-small" title="Tạo nhóm mới" onclick="createNewGroup()">
@@ -635,20 +626,16 @@
                 </button>
             </div>
             <div class="list-container" id="groupsList">
-                <!-- Group Items injected here -->
-            </div>
+                </div>
 
-            <!-- Users Section -->
             <div class="section-title" style="margin-top: 25px;">
                 Người dùng Online
                 <span class="btn-icon-small"><i class="fa-solid fa-users"></i></span>
             </div>
             <div class="list-container" id="usersList">
-                <!-- User Items injected here -->
-            </div>
+                </div>
         </div>
 
-        <!-- Main Chat -->
         <div class="chat-main">
             <div class="chat-header">
                 <div class="avatar" style="background: var(--info);" id="targetAvatar">🌐</div>
@@ -659,12 +646,13 @@
             </div>
 
             <div class="messages-area" id="messages">
-                <!-- Messages injected here -->
                 <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
             </div>
 
             <div class="input-area">
-                <button class="btn-icon-small" title="Gửi File (Sắp ra mắt)" style="font-size: 1.2rem; color: #94a3b8;">
+                <input type="file" id="fileInput" style="display:none" />
+                <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;"
+                    onclick="document.getElementById('fileInput').click()">
                     <i class="fa-solid fa-paperclip"></i>
                 </button>
                 <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." autocomplete="off">
@@ -678,7 +666,48 @@
     <div id="toast">Thông báo</div>
 
     <script>
-        let ws = null;
+        // --- CẤU HÌNH SERVER ---
+        const SERVER_URL = "https://nhom11-ungdungchatreal-time.onrender.com/";
+        let socket = null;
+        
+        // --- File Send Logic ---
+        const CHUNK_SIZE = 4096;
+        document.getElementById('fileInput').addEventListener('change', async function (e) {
+            const file = e.target.files[0];
+            if (!file || !socket || !socket.connected) return;
+            // Gửi thông tin file
+            sendJson('FILE_REQUEST', {
+                filename: file.name,
+                filesize: file.size,
+                receiver: null // hoặc chọn người nhận nếu cần
+            });
+            // Gửi từng chunk
+            let chunkNum = 0;
+            const reader = new FileReader();
+            let offset = 0;
+            function sendChunk() {
+                const slice = file.slice(offset, offset + CHUNK_SIZE);
+                reader.readAsArrayBuffer(slice);
+            }
+            reader.onload = function (ev) {
+                const chunk = new Uint8Array(ev.target.result);
+                const chunk_b64 = btoa(String.fromCharCode.apply(null, chunk));
+                sendJson('FILE_CHUNK', {
+                    chunk_num: chunkNum,
+                    data: chunk_b64
+                });
+                offset += CHUNK_SIZE;
+                chunkNum++;
+                if (offset < file.size) {
+                    sendChunk();
+                } else {
+                    sendJson('FILE_END', {});
+                    showToast('Đã gửi file: ' + file.name);
+                }
+            };
+            sendChunk();
+        });
+        
         let myName = "";
         let currentTarget = "Public:Public"; // Type:ID
         let myGroups = new Set(); // Stores group IDs I am a member of
@@ -718,8 +747,8 @@
             setTimeout(() => { el.className = el.className.replace("show", ""); }, 3000);
         }
 
-        // --- WebSocket Logic ---
-        function handleAuth(type) {
+        // --- Socket.IO Logic ---
+        function handleAuth(type, autoLogin = false) {
             const userIn = type === 'LOGIN' ? document.getElementById('loginUser') : document.getElementById('regUser');
             const passIn = type === 'LOGIN' ? document.getElementById('loginPass') : document.getElementById('regPass');
             const username = userIn.value.trim();
@@ -734,31 +763,35 @@
             }
 
             if (!username || !password) {
-                document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
+                if (!autoLogin) {
+                    document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
+                }
                 return;
             }
 
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                const host = window.location.hostname || 'localhost';
-                ws = new WebSocket('ws://' + host + ':5555');
+            // --- SỬA LỖI Ở ĐÂY: LUÔN KẾT NỐI TỚI RENDER ---
+            if (!socket || socket.disconnected) {
+                // Ép buộc kết nối tới Server Render, không quan tâm đang chạy ở đâu
+                socket = io(SERVER_URL, {
+                    transports: ['websocket', 'polling']
+                });
 
-                ws.onopen = () => {
+                socket.on('connect', () => {
                     sendJson(type, { username, password });
                     myName = username;
-                };
-
-                ws.onmessage = handleServerMessage;
-
-                ws.onerror = (err) => {
-                    console.error("WS Error", err);
-                    document.getElementById('authError').textContent = "Không thể kết nối đến server!";
-                };
-
-                ws.onclose = () => {
+                });
+                socket.on('disconnect', () => {
                     if (document.getElementById('chatPanel').style.display === 'flex') {
                         showToast("Đã mất kết nối với Server");
                         setTimeout(() => location.reload(), 2000);
                     }
+                });
+                socket.on('message', (data) => handleServerMessage(data));
+                
+                // Trường hợp nếu socket đã sẵn sàng (đôi khi xảy ra)
+                if(socket.connected) {
+                     sendJson(type, { username, password });
+                     myName = username;
                 }
             } else {
                 sendJson(type, { username, password });
@@ -767,38 +800,26 @@
         }
 
         function sendJson(type, payload) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type, payload }));
+            if (socket && socket.connected) {
+                socket.emit('message', { type, payload });
             }
         }
 
-        function logout() {
-            if (confirm("Bạn có chắc muốn đăng xuất?")) {
-                if (ws) {
-                    // Send explicit exit message if logical to do so, though close() does it too usually
-                    ws.send(JSON.stringify({ type: 'EXIT' }));
-                    ws.close();
-                }
-                myName = null;
-                myGroups.clear();
-
-                // Reset UI
-                document.getElementById('authPanel').style.display = 'flex';
-                document.getElementById('chatPanel').style.display = 'none';
-                document.getElementById('loginUser').value = '';
-                document.getElementById('loginPass').value = '';
-
-                showToast("Đã đăng xuất", "info");
+        function handleServerMessage(data) {
+            // Check nếu data là string (đôi khi socket python gửi về dạng string)
+            if (typeof data === 'string') {
+                try { data = JSON.parse(data); } catch(e) {}
             }
-        }
-
-        function handleServerMessage(event) {
-            let data;
-            try { data = JSON.parse(event.data); } catch (e) { return; }
             console.log("Recv:", data);
 
             switch (data.type) {
                 case 'LOGIN_SUCCESS':
+                    // Lưu username và password vào localStorage để giữ trạng thái đăng nhập
+                    if (myName) {
+                        const pass = document.getElementById('loginPass').value || '';
+                        localStorage.setItem('chat_username', myName);
+                        localStorage.setItem('chat_password', pass);
+                    }
                     enterChatMode();
                     break;
                 case 'ERROR':
@@ -808,47 +829,43 @@
                 case 'SUCCESS':
                     showToast(data.payload);
                     break;
-                case 'TEXT': // Public msg
-                    // If current target is Public, show it
-                    // Otherwise maybe show notification dot (todo)
+                case 'TEXT':
                     if (currentTarget === 'Public:Public') {
                         appendMessage(data.payload);
                     }
                     break;
                 case 'PRIVATE':
-                    // payload: {sender, content}
-                    // Only show if talking to sender, or update UI
-                    if (currentTarget === `User:${data.payload.sender}`) {
-                        appendMessage(data.payload.content, 'received', data.payload.sender);
-                    } else {
-                        showToast(`Tin nhắn mới từ ${data.payload.sender}`);
+                    // Logic xác định đối phương trong cuộc trò chuyện
+                    // Nếu tôi gửi -> đối phương là receiver
+                    // Nếu họ gửi -> đối phương là sender
+                    const p = data.payload;
+                    const partner = (p.sender === myName) ? p.receiver : p.sender;
+
+                    if (currentTarget === `User:${partner}`) {
+                        const msgType = (p.sender === myName) ? 'sent' : 'received';
+                        appendMessage(p.content, msgType, p.sender);
+                    } else if (p.sender !== myName) {
+                        showToast(`Tin nhắn mới từ ${p.sender}`);
                     }
                     break;
                 case 'GROUP':
-                    // payload: {sender, group_id, content}
                     if (currentTarget === `Group:${data.payload.group_id}`) {
-                        appendMessage(data.payload.content, 'received', data.payload.sender);
+                        const msgType = (data.payload.sender === myName) ? 'sent' : 'received';
+                        appendMessage(data.payload.content, msgType, data.payload.sender);
                     }
+                    break;
+                case 'FILE':
+                    // Hiển thị file trong đoạn chat
+                    const file = data.payload;
+                    const fileUrl = `${SERVER_URL}/download?filename=${encodeURIComponent(file.filename)}`;
+                    const fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize / 1024).toFixed(1)} KB)`;
+                    appendMessage(fileMsg, 'received', file.sender || 'File');
                     break;
                 case 'USERS_LIST':
                     renderUsers(data.payload);
                     break;
                 case 'GROUPS_LIST':
                     renderGroups(data.payload);
-                    break;
-                case 'HISTORY_DATA':
-                    // payload is list of messages
-                    document.getElementById('messages').innerHTML = ''; // Clear system msg
-                    data.payload.forEach(msg => {
-                        // Determine type based on current target usually, but msg has content
-                        // msg: {sender, content, receiver, timestamp}
-                        let type = 'received';
-                        if (msg.sender === myName) type = 'sent';
-                        appendMessage(msg.content, type, msg.sender);
-                    });
-                    if (data.payload.length === 0) {
-                        appendMessage(`--- Chưa có tin nhắn nào ---`, 'system');
-                    }
                     break;
             }
         }
@@ -862,6 +879,22 @@
             // Set default target
             setTarget('Public', 'Public', 'Chat Công Khai');
         }
+
+        // Khi load lại trang, nếu có username và password trong localStorage thì tự động đăng nhập lại
+        window.addEventListener('DOMContentLoaded', function () {
+            const savedUser = localStorage.getItem('chat_username');
+            const savedPass = localStorage.getItem('chat_password');
+            if (savedUser) {
+                document.getElementById('loginUser').value = savedUser;
+            }
+            if (savedPass) {
+                document.getElementById('loginPass').value = savedPass;
+            }
+            if (savedUser && savedPass) {
+                // Tự động đăng nhập lại
+                handleAuth('LOGIN', true);
+            }
+        });
 
         // --- Chat UI Rendering ---
         function renderUsers(users) {
@@ -886,13 +919,6 @@
         }
 
         function renderGroups(groups) {
-            // Check membership logic? 
-            // Currently server doesn't send "my groups" vs "all groups" plainly,
-            // but we can infer or simpler: user creates -> is member. join -> is member.
-            // For now, assume we need to track membership locally or try to send msg and fail.
-            // BETTER: The server "Join" response sends "Joined group X".
-            // Since we don't have persistent state sync on verify, we'll let user try to click.
-
             const container = document.getElementById('groupsList');
             container.innerHTML = '';
 
@@ -926,12 +952,7 @@
 
             targetNameEl.textContent = name;
 
-            // Update UI Active State
-            // (Re-rendering lists would be cleaner but heavier, so just toggle active class manually or rely on list refresh)
             document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
-            // Find element to active ?? Difficult without ID. 
-            // Ideally we re-render or add IDs to elements.
-            // Let's just update header for now.
 
             if (type === 'Public') {
                 targetStatusEl.textContent = "Hội thoại chung với mọi người";
@@ -948,42 +969,28 @@
                 targetAvatarEl.style.background = 'var(--secondary)';
             }
 
-            document.getElementById('messages').innerHTML = ''; // Clear current
-
-            // Request History
-            // Map type to protocol expected types: 'public', 'private', 'group'
-            let apiType = type.toLowerCase();
-            sendJson('GET_HISTORY', { target_type: apiType, target_id: id });
-
-            appendMessage(`--- Đang tải lịch sử... ---`, 'system');
+            document.getElementById('messages').innerHTML = '';
+            // Gửi yêu cầu lấy lịch sử chat từ server
+            if (type === 'User') {
+                sendJson('HISTORY_REQUEST', { history_type: 'private', target: id });
+            } else if (type === 'Group') {
+                sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
+            }
+            appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
         }
 
         // --- Actions ---
         function createNewGroup() {
             const name = prompt("Nhập tên nhóm mới:");
             if (name) {
-                // Fix: Send string directly as payload for MSG_GROUP_CREATE
                 sendJson('GROUP_CREATE', name);
-                // Assume success -> add to myGroups? Server sends MSG_GROUPS_LIST update.
-                // We also need to know ID to add to myGroups. 
-                // The server response to create is: {'type': 'SUCCESS', 'payload': "Group '...' created with ID X"}
-                // Provide a way to parse ID?
-                // For now, user has to Click "Join" on the new group if not auto-joined, 
-                // BUT Server code: create_group adds creator to members.
-                // So we should add to myGroups.
-                // We'll rely on "Try to chat". Or we need to parse the SUCCESS message.
-                // Let's just prompt user to refresh or re-click.
             }
         }
 
         function joinGroup(gid, gname) {
             sendJson('GROUP_JOIN', gid);
             myGroups.add(gid);
-            // Request list update to re-render buttons
-            ws.send(JSON.stringify({ type: 'GROUPS_LIST_REQUEST', payload: null }));
-            // Note: Protocol doesn't have explicit list request, but server broadcasts on changes.
-            // We can manually trigger re-render if we had the list.
-            // Let's just reload the visual state of that button
+            // Refresh lại list để nút Join ẩn đi
             event.target.classList.add('hidden');
             event.target.nextElementSibling.classList.remove('hidden');
             showToast(`Đã tham gia nhóm ${gname}`);
@@ -1017,9 +1024,7 @@
             } else if (currentTarget.startsWith('Group:')) {
                 const groupId = parseInt(currentTarget.split(':')[1]);
                 if (!myGroups.has(groupId)) {
-                    // Quick check, though server also checks
-                    // We might define 'myGroups' better.
-                    // For now, let's just send.
+                    // Quick check
                 }
                 sendJson('GROUP', { group_id: groupId, content: txt });
                 appendMessage(txt, 'sent');
@@ -1027,25 +1032,16 @@
             input.value = '';
         }
 
-        // --- Chat Bubbles ---
         function appendMessage(content, type = 'received', sender = '') {
             const container = document.getElementById('messages');
-
-            // Parse content for "Sender: " prefix if Public text (from server broadcast)
-            // Server format: "User: content" or "[timestamp] User: content" (history)
-
             let displayContent = content;
             let displaySender = sender;
 
             if (type === 'received' && !sender) {
-                // Try to split logic for Public messages
                 if (content.includes(':')) {
                     const parts = content.split(':');
                     if (parts.length >= 2) {
-                        // Very rough heuristic
                         if (!displaySender) displaySender = parts[0].trim();
-                        // displayContent = parts.slice(1).join(':').trim(); 
-                        // Keep full content for now to be safe against complex strings
                     }
                 }
             }
@@ -1064,12 +1060,10 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // Input Enter Key
         document.getElementById('chatInput').onkeypress = (e) => {
             if (e.key === 'Enter') sendMessage();
         }
 
     </script>
 </body>
-
 </html>

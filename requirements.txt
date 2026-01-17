@@ -1,0 +1,10 @@
+Flask==2.2.5
+Flask-SocketIO==5.3.6
+python-socketio==5.5.0
+eventlet==0.37.0
+dnspython==2.2.1
+gunicorn==20.1.0
+python-dateutil
+pytz
+jinja2
+Werkzeug==2.2.3

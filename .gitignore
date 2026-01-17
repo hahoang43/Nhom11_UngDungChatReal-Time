@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.env
+
+# VSCode
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# System
+.DS_Store
+Thumbs.db
+
+# Data & Export
+/data/
+/export/
+*.json
+
+# SonarQube
+.sonarqube/
+
+# Test outputs
+*.coverage
+*.pytest_cache/
+
+# Node/Web
+node_modules/
+
+# Others
+*.bak
+*.swp
+*.tmp
+
+# Ignore received files
+src/server/received_files/
