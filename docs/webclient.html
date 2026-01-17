@@ -662,7 +662,8 @@
 
             <div class="input-area">
                 <input type="file" id="fileInput" style="display:none" />
-                <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;" onclick="document.getElementById('fileInput').click()">
+                <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;"
+                    onclick="document.getElementById('fileInput').click()">
                     <i class="fa-solid fa-paperclip"></i>
                 </button>
                 <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." autocomplete="off">
@@ -678,48 +679,48 @@
     <script>
         let ws = null;
         const CHUNK_SIZE = 4096;
-                // --- File Send Logic ---
-                document.getElementById('fileInput').addEventListener('change', async function(e) {
-                    const file = e.target.files[0];
-                    if (!file || !ws || ws.readyState !== WebSocket.OPEN) return;
-                    // Gửi thông tin file
-                    ws.send(JSON.stringify({
-                        type: 'FILE_REQUEST',
-                        payload: {
-                            filename: file.name,
-                            filesize: file.size,
-                            receiver: null // hoặc chọn người nhận nếu cần
-                        }
-                    }));
-                    // Gửi từng chunk
-                    let chunkNum = 0;
-                    const reader = new FileReader();
-                    let offset = 0;
-                    function sendChunk() {
-                        const slice = file.slice(offset, offset + CHUNK_SIZE);
-                        reader.readAsArrayBuffer(slice);
+        // --- File Send Logic ---
+        document.getElementById('fileInput').addEventListener('change', async function (e) {
+            const file = e.target.files[0];
+            if (!file || !ws || ws.readyState !== WebSocket.OPEN) return;
+            // Gửi thông tin file
+            ws.send(JSON.stringify({
+                type: 'FILE_REQUEST',
+                payload: {
+                    filename: file.name,
+                    filesize: file.size,
+                    receiver: null // hoặc chọn người nhận nếu cần
+                }
+            }));
+            // Gửi từng chunk
+            let chunkNum = 0;
+            const reader = new FileReader();
+            let offset = 0;
+            function sendChunk() {
+                const slice = file.slice(offset, offset + CHUNK_SIZE);
+                reader.readAsArrayBuffer(slice);
+            }
+            reader.onload = function (ev) {
+                const chunk = new Uint8Array(ev.target.result);
+                const chunk_b64 = btoa(String.fromCharCode.apply(null, chunk));
+                ws.send(JSON.stringify({
+                    type: 'FILE_CHUNK',
+                    payload: {
+                        chunk_num: chunkNum,
+                        data: chunk_b64
                     }
-                    reader.onload = function(ev) {
-                        const chunk = new Uint8Array(ev.target.result);
-                        const chunk_b64 = btoa(String.fromCharCode.apply(null, chunk));
-                        ws.send(JSON.stringify({
-                            type: 'FILE_CHUNK',
-                            payload: {
-                                chunk_num: chunkNum,
-                                data: chunk_b64
-                            }
-                        }));
-                        offset += CHUNK_SIZE;
-                        chunkNum++;
-                        if (offset < file.size) {
-                            sendChunk();
-                        } else {
-                            ws.send(JSON.stringify({ type: 'FILE_END', payload: {} }));
-                            showToast('Đã gửi file: ' + file.name);
-                        }
-                    };
+                }));
+                offset += CHUNK_SIZE;
+                chunkNum++;
+                if (offset < file.size) {
                     sendChunk();
-                });
+                } else {
+                    ws.send(JSON.stringify({ type: 'FILE_END', payload: {} }));
+                    showToast('Đã gửi file: ' + file.name);
+                }
+            };
+            sendChunk();
+        });
         let myName = "";
         let currentTarget = "Public:Public"; // Type:ID
         let myGroups = new Set(); // Stores group IDs I am a member of
@@ -760,7 +761,7 @@
         }
 
         // --- WebSocket Logic ---
-        function handleAuth(type) {
+        function handleAuth(type, autoLogin = false) {
             const userIn = type === 'LOGIN' ? document.getElementById('loginUser') : document.getElementById('regUser');
             const passIn = type === 'LOGIN' ? document.getElementById('loginPass') : document.getElementById('regPass');
             const username = userIn.value.trim();
@@ -775,7 +776,9 @@
             }
 
             if (!username || !password) {
-                document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
+                if (!autoLogin) {
+                    document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
+                }
                 return;
             }
 
@@ -792,7 +795,7 @@
 
                 ws.onerror = (err) => {
                     console.error("WS Error", err);
-                    document.getElementById('authError').textContent = "Không thể kết nối đến server!";
+                    if (!autoLogin) document.getElementById('authError').textContent = "Không thể kết nối đến server!";
                 };
 
                 ws.onclose = () => {
@@ -820,6 +823,12 @@
 
             switch (data.type) {
                 case 'LOGIN_SUCCESS':
+                    // Lưu username và password vào localStorage để giữ trạng thái đăng nhập
+                    if (myName) {
+                        const pass = document.getElementById('loginPass').value || '';
+                        localStorage.setItem('chat_username', myName);
+                        localStorage.setItem('chat_password', pass);
+                    }
                     enterChatMode();
                     break;
                 case 'ERROR':
@@ -850,7 +859,7 @@
                     // Hiển thị file trong đoạn chat
                     const file = data.payload;
                     const fileUrl = `http://${window.location.hostname}:8000/download?filename=${encodeURIComponent(file.filename)}`;
-                    const fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize/1024).toFixed(1)} KB)`;
+                    const fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize / 1024).toFixed(1)} KB)`;
                     appendMessage(fileMsg, 'received', file.sender || 'File');
                     break;
                 case 'USERS_LIST':
@@ -871,6 +880,22 @@
             // Set default target
             setTarget('Public', 'Public', 'Chat Công Khai');
         }
+
+        // Khi load lại trang, nếu có username và password trong localStorage thì tự động đăng nhập lại
+        window.addEventListener('DOMContentLoaded', function () {
+            const savedUser = localStorage.getItem('chat_username');
+            const savedPass = localStorage.getItem('chat_password');
+            if (savedUser) {
+                document.getElementById('loginUser').value = savedUser;
+            }
+            if (savedPass) {
+                document.getElementById('loginPass').value = savedPass;
+            }
+            if (savedUser && savedPass) {
+                // Tự động đăng nhập lại
+                handleAuth('LOGIN', true);
+            }
+        });
 
         // --- Chat UI Rendering ---
         function renderUsers(users) {
@@ -1043,10 +1068,10 @@
         }
 
         // --- Chat Bubbles ---
-            // Lưu lịch sử tin nhắn vào bộ nhớ tạm
-            if (!window.publicHistory) window.publicHistory = [];
-            if (!window.privateHistory) window.privateHistory = {};
-            if (!window.groupHistory) window.groupHistory = {};
+        // Lưu lịch sử tin nhắn vào bộ nhớ tạm
+        if (!window.publicHistory) window.publicHistory = [];
+        if (!window.privateHistory) window.privateHistory = {};
+        if (!window.groupHistory) window.groupHistory = {};
 
         function appendMessage(content, type = 'received', sender = '') {
             const container = document.getElementById('messages');

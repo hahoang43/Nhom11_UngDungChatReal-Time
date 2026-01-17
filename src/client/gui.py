@@ -275,6 +275,7 @@ class ChatGUI:
             self.select_target(f"Group:{group_id}")
 
     def update_users_list(self, users):
+        print(f"[DEBUG] Received MSG_USERS_LIST: {users}")
         self.root.after(0, self._update_users_ui, users)
 
     def _update_users_ui(self, users):
