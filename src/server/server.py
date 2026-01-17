@@ -2,6 +2,8 @@ import socket
 import threading
 import sys
 import os
+import json
+import base64
 
 # Add project root to path to import common modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -9,10 +11,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from src.common import protocol
 from src.server import websocket_handler
 from src.server.db import Database
-import json
-import os
-import base64
-import threading
 
 class ChatServer:
     def __init__(self, host='0.0.0.0', port=protocol.PORT):
@@ -524,8 +522,6 @@ class ChatServer:
                         del self.clients[client_sock]
                     if client_sock in self.client_types:
                         del self.client_types[client_sock]
-                    if client_sock in self.client_encryption:
-                        del self.client_encryption[client_sock]
 
 if __name__ == "__main__":
     server = ChatServer()
