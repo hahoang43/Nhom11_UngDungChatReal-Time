@@ -835,15 +835,23 @@
                     }
                     break;
                 case 'PRIVATE':
-                    if (currentTarget === `User:${data.payload.sender}`) {
-                        appendMessage(data.payload.content, 'received', data.payload.sender);
-                    } else {
-                        showToast(`Tin nhắn mới từ ${data.payload.sender}`);
+                    // Logic xác định đối phương trong cuộc trò chuyện
+                    // Nếu tôi gửi -> đối phương là receiver
+                    // Nếu họ gửi -> đối phương là sender
+                    const p = data.payload;
+                    const partner = (p.sender === myName) ? p.receiver : p.sender;
+
+                    if (currentTarget === `User:${partner}`) {
+                        const msgType = (p.sender === myName) ? 'sent' : 'received';
+                        appendMessage(p.content, msgType, p.sender);
+                    } else if (p.sender !== myName) {
+                        showToast(`Tin nhắn mới từ ${p.sender}`);
                     }
                     break;
                 case 'GROUP':
                     if (currentTarget === `Group:${data.payload.group_id}`) {
-                        appendMessage(data.payload.content, 'received', data.payload.sender);
+                        const msgType = (data.payload.sender === myName) ? 'sent' : 'received';
+                        appendMessage(data.payload.content, msgType, data.payload.sender);
                     }
                     break;
                 case 'FILE':
