@@ -382,6 +382,38 @@ class ChatServer:
                                 self.broadcast_file_info(file_info)
                             
                             del self.file_transfers[client_socket]
+                            
+                elif message.get('type') == protocol.MSG_GET_HISTORY:
+                    payload = message.get('payload', {})
+                    target_type = payload.get('target_type')
+                    target_id = payload.get('target_id')
+                    
+                    print(f"[DEBUG] Received GET_HISTORY request: type={target_type}, id={target_id}")
+                    
+                    history = []
+                    if target_type == 'public':
+                        history = self.db.get_history(limit=1000, message_type='public')
+                    elif target_type == 'private':
+                        history = self.db.get_history(limit=1000, message_type='private', username=target_id)
+                    elif target_type == 'group':
+                        history = self.db.get_history(limit=1000, message_type='group', group_id=target_id)
+                    
+                    print(f"[DEBUG] Fetched {len(history)} messages from DB")
+
+                    # Convert rows to dicts
+                    history_list = []
+                    for row in history:
+                        history_list.append({
+                            'sender': row['sender'],
+                            'content': row['content'],
+                            'receiver': row['receiver'], # Add receiver to dict
+                            'timestamp': row['timestamp']
+                        })
+                        
+                    self._send_to_client(client_socket, {
+                        'type': protocol.MSG_HISTORY_DATA,
+                        'payload': history_list
+                    })
 
         except Exception as e:
             print(f"[ERROR] Error handling client {username}: {e}")

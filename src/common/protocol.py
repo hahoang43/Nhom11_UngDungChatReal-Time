@@ -22,6 +22,8 @@ MSG_FILE_REQUEST = "FILE_REQUEST"
 MSG_FILE_CHUNK = "FILE_CHUNK"
 MSG_FILE_END = "FILE_END"
 MSG_FILE = "FILE"
+MSG_GET_HISTORY = "GET_HISTORY"
+MSG_HISTORY_DATA = "HISTORY_DATA"
 
 def send_json(socket, data):
     """Helper to send JSON data with a fixed-length header"""

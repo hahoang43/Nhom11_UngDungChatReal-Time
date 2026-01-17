@@ -622,6 +622,9 @@
                         Online
                     </div>
                 </div>
+                <button class="btn-icon-small" title="Đăng xuất" onclick="logout()" style="color: var(--danger);">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
             </div>
 
             <!-- Groups Section -->
@@ -769,6 +772,26 @@
             }
         }
 
+        function logout() {
+            if (confirm("Bạn có chắc muốn đăng xuất?")) {
+                if (ws) {
+                    // Send explicit exit message if logical to do so, though close() does it too usually
+                    ws.send(JSON.stringify({ type: 'EXIT' }));
+                    ws.close();
+                }
+                myName = null;
+                myGroups.clear();
+
+                // Reset UI
+                document.getElementById('authPanel').style.display = 'flex';
+                document.getElementById('chatPanel').style.display = 'none';
+                document.getElementById('loginUser').value = '';
+                document.getElementById('loginPass').value = '';
+
+                showToast("Đã đăng xuất", "info");
+            }
+        }
+
         function handleServerMessage(event) {
             let data;
             try { data = JSON.parse(event.data); } catch (e) { return; }
@@ -812,6 +835,20 @@
                     break;
                 case 'GROUPS_LIST':
                     renderGroups(data.payload);
+                    break;
+                case 'HISTORY_DATA':
+                    // payload is list of messages
+                    document.getElementById('messages').innerHTML = ''; // Clear system msg
+                    data.payload.forEach(msg => {
+                        // Determine type based on current target usually, but msg has content
+                        // msg: {sender, content, receiver, timestamp}
+                        let type = 'received';
+                        if (msg.sender === myName) type = 'sent';
+                        appendMessage(msg.content, type, msg.sender);
+                    });
+                    if (data.payload.length === 0) {
+                        appendMessage(`--- Chưa có tin nhắn nào ---`, 'system');
+                    }
                     break;
             }
         }
@@ -911,11 +948,14 @@
                 targetAvatarEl.style.background = 'var(--secondary)';
             }
 
-            document.getElementById('messages').innerHTML = ''; // Clear chat on switch? Or keep history?
-            // Real app would fetch history here.
+            document.getElementById('messages').innerHTML = ''; // Clear current
 
-            // To be nice, let's keep it empty or show a system msg
-            appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
+            // Request History
+            // Map type to protocol expected types: 'public', 'private', 'group'
+            let apiType = type.toLowerCase();
+            sendJson('GET_HISTORY', { target_type: apiType, target_id: id });
+
+            appendMessage(`--- Đang tải lịch sử... ---`, 'system');
         }
 
         // --- Actions ---
