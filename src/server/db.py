@@ -23,13 +23,18 @@ class Database:
         self.db_type = 'sqlite'
 
         if self.db_url and self.db_url.startswith('postgres'):
+            print(f"✅ DETECTED DATABASE_URL: Connecting to PostgreSQL...")
             if not psycopg2:
+                print(f"❌ ERROR: psycopg2 is missing despite DATABASE_URL being set.")
                 raise ImportError("psycopg2 is required for PostgreSQL connection")
             self.db_type = 'postgres'
             self.connect_postgres()
+            print(f"✅ Connected to PostgreSQL successfully.")
         else:
+            print(f"⚠️ NO DATABASE_URL DETECTED: Utilizing local SQLite database.")
             self.db_type = 'sqlite'
             self.connect_sqlite()
+            print(f"✅ Connected to SQLite successfully.")
             
         self.create_tables()
 
