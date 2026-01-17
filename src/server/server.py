@@ -13,6 +13,48 @@ from src.server import websocket_handler
 from src.server.db import Database
 
 class ChatServer:
+    def start_file_download_server(self, port=8000):
+        import urllib.parse
+        from http.server import SimpleHTTPRequestHandler, HTTPServer
+        files_dir = self.files_dir
+        class FileDownloadHandler(SimpleHTTPRequestHandler):
+            def do_GET(self):
+                parsed = urllib.parse.urlparse(self.path)
+                if parsed.path == '/download':
+                    params = urllib.parse.parse_qs(parsed.query)
+                    filename = params.get('filename', [None])[0]
+                    if not filename:
+                        self.send_response(400)
+                        self.end_headers()
+                        self.wfile.write(b'Missing filename')
+                        return
+                    safe_name = os.path.basename(filename)
+                    file_path = os.path.join(files_dir, safe_name)
+                    if not os.path.isfile(file_path):
+                        self.send_response(404)
+                        self.end_headers()
+                        self.wfile.write(b'File not found')
+                        return
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/octet-stream')
+                    self.send_header('Content-Disposition', f'attachment; filename="{safe_name}"')
+                    self.end_headers()
+                    with open(file_path, 'rb') as f:
+                        while True:
+                            chunk = f.read(8192)
+                            if not chunk:
+                                break
+                            self.wfile.write(chunk)
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+        def run_server():
+            httpd = HTTPServer(('0.0.0.0', port), FileDownloadHandler)
+            print(f"[DOWNLOAD] File download server running on port {port}")
+            httpd.serve_forever()
+        t = threading.Thread(target=run_server, daemon=True)
+        t.start()
+
     def __init__(self, host='0.0.0.0', port=protocol.PORT):
         self.host = host
         self.port = port
@@ -23,8 +65,8 @@ class ChatServer:
         self.db = Database()
         self.lock = threading.Lock()
         self.running = True
-        # Tạo thư mục lưu file
-        self.files_dir = os.path.join(os.path.dirname(__file__), 'received_files')
+        # Tạo thư mục lưu file ở ngoài src để tránh bị reload
+        self.files_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../data/received_files'))
         os.makedirs(self.files_dir, exist_ok=True)
 
     def start(self):
@@ -193,21 +235,42 @@ class ChatServer:
                     else:
                         websocket_handler.send_frame(client_socket, json.dumps(success_msg))
                     
-                    # Send chat history to the new user
-                    history = self.db.get_history(20, message_type='public', username=username)
-                    for row in history:
-                        # Access Row objects by column name
+
+                    # Gửi lịch sử chat công khai
+                    public_history = self.db.get_history(20, message_type='public', username=username)
+                    for row in public_history:
                         sender = row['sender']
                         content = row['content']
                         timestamp = row['timestamp']
                         history_msg = {
-                            'type': protocol.MSG_TEXT, 
+                            'type': protocol.MSG_TEXT,
                             'payload': f"[{timestamp}] {sender}: {content}"
                         }
                         if client_type == 'tcp':
                             protocol.send_json(client_socket, history_msg)
                         else:
                             websocket_handler.send_frame(client_socket, json.dumps(history_msg))
+
+                    # Gửi lịch sử chat cá nhân (private)
+                    private_history = self.db.get_history(20, message_type='private', username=username)
+                    for row in private_history:
+                        sender = row['sender']
+                        receiver = row['receiver']
+                        content = row['content']
+                        timestamp = row['timestamp']
+                        private_msg = {
+                            'type': protocol.MSG_PRIVATE,
+                            'payload': {
+                                'sender': sender,
+                                'receiver': receiver,
+                                'content': content,
+                                'timestamp': timestamp
+                            }
+                        }
+                        if client_type == 'tcp':
+                            protocol.send_json(client_socket, private_msg)
+                        else:
+                            websocket_handler.send_frame(client_socket, json.dumps(private_msg))
 
                     self.broadcast({
                         'type': protocol.MSG_TEXT, 
@@ -231,30 +294,67 @@ class ChatServer:
                     raw_msg = websocket_handler.receive_frame(client_socket)
                     if raw_msg:
                         try:
-                            # Assume WS client sends JSON. If just text, wrap it.
-                            # Try parsing as JSON first
                             message = json.loads(raw_msg)
                         except json.JSONDecodeError:
-                            # If not JSON, treat as simple text message
                             message = {'type': protocol.MSG_TEXT, 'payload': raw_msg}
                     else:
-                        message = None # Connection closed
+                        message = None
 
                 if message is None:
-                    break # Connection closed
-                
+                    break
+
+                # Khi client yêu cầu lịch sử chat nhóm/cá nhân
+                if message.get('type') == 'HISTORY_REQUEST':
+                    payload = message.get('payload', {})
+                    history_type = payload.get('history_type')
+                    target = payload.get('target')
+                    if history_type == 'private' and target:
+                        private_history = self.db.get_history(50, message_type='private', username=target)
+                        for row in private_history:
+                            sender = row['sender']
+                            receiver = row['receiver']
+                            content = row['content']
+                            timestamp = row['timestamp']
+                            private_msg = {
+                                'type': protocol.MSG_PRIVATE,
+                                'payload': {
+                                    'sender': sender,
+                                    'receiver': receiver,
+                                    'content': content,
+                                    'timestamp': timestamp
+                                }
+                            }
+                            self._send_to_client(client_socket, private_msg)
+                    elif history_type == 'group' and target:
+                        group_history = self.db.get_history(50, message_type='group', group_id=target)
+                        for row in group_history:
+                            sender = row['sender']
+                            content = row['content']
+                            timestamp = row['timestamp']
+                            group_msg = {
+                                'type': protocol.MSG_GROUP,
+                                'payload': {
+                                    'sender': sender,
+                                    'group_id': target,
+                                    'content': content,
+                                    'timestamp': timestamp
+                                }
+                            }
+                            self._send_to_client(client_socket, group_msg)
+                    continue
+
                 if message.get('type') == protocol.MSG_EXIT:
                     break
-                
+
                 if message.get('type') == protocol.MSG_TEXT:
                     content = message.get('payload')
                     print(f"[{username}] {content}")
                     self.db.save_message(username, content, message_type='public')
                     self.broadcast({
-                        'type': protocol.MSG_TEXT, 
+                        'type': protocol.MSG_TEXT,
                         'payload': f"{username}: {content}"
                     }, exclude_socket=client_socket)
-                
+
                 elif message.get('type') == protocol.MSG_PRIVATE:
                     payload = message.get('payload', {})
                     receiver = payload.get('receiver')
@@ -323,65 +423,66 @@ class ChatServer:
                         self._send_to_client(client_socket, {'type': 'ERROR', 'payload': "Failed to leave group"})
 
                 elif message.get('type') == protocol.MSG_FILE_REQUEST:
-                    # Xử lý file request
                     file_info = message.get('payload', {})
                     filename = file_info.get('filename')
                     filesize = file_info.get('filesize')
                     receiver = file_info.get('receiver')
-                    
                     print(f"[FILE] {username} sending file: {filename} ({filesize} bytes)")
-                    
-                    # Khởi tạo file transfer
+                    filepath = os.path.join(self.files_dir, filename)
+                    try:
+                        f = open(filepath, 'wb')
+                    except Exception as e:
+                        print(f"[ERROR] Cannot open file for writing: {e}")
+                        continue
                     with self.lock:
                         self.file_transfers[client_socket] = {
                             'sender': username,
                             'filename': filename,
                             'filesize': filesize,
                             'receiver': receiver,
-                            'chunks': [],
-                            'total_chunks': 0
+                            'file': f
                         }
-                
                 elif message.get('type') == protocol.MSG_FILE_CHUNK:
-                    # Nhận chunk của file
                     chunk_data = message.get('payload', {})
-                    chunk_num = chunk_data.get('chunk_num', 0)
                     chunk_b64 = chunk_data.get('data', '')
-                    
+                    f = None
                     with self.lock:
                         if client_socket in self.file_transfers:
-                            self.file_transfers[client_socket]['chunks'].append((chunk_num, chunk_b64))
-                            self.file_transfers[client_socket]['total_chunks'] += 1
-                
+                            f = self.file_transfers[client_socket]['file']
+                    if f:
+                        try:
+                            data = base64.b64decode(chunk_b64)
+                            f.write(data)
+                        except Exception as e:
+                            print(f"[ERROR] Write chunk failed: {e}")
                 elif message.get('type') == protocol.MSG_FILE_END:
-                    # Kết thúc file transfer
+                    file_data = None
                     with self.lock:
                         if client_socket in self.file_transfers:
                             file_data = self.file_transfers[client_socket]
-                            filepath = self._save_received_file(file_data, username)
-                            
-                            if filepath:
-                                # Lưu file info vào database
-                                file_msg = f"📎 File: {file_data['filename']} ({self._format_file_size(file_data['filesize'])})"
-                                self.db.save_message(username, file_msg, message_type='public')
-                                
-                                # Broadcast file info đến tất cả clients (bao gồm cả người gửi)
-                                file_info = {
-                                    'type': protocol.MSG_FILE,
-                                    'payload': {
-                                        'sender': username,
-                                        'filename': file_data['filename'],
-                                        'filesize': file_data['filesize'],
-                                        'filepath': filepath,  # Đường dẫn trên server
-                                        'message': f"{username} đã gửi file: {file_data['filename']}"
-                                    },
-                                    'encrypted': False
-                                }
-                                
-                                # Broadcast đến tất cả clients
-                                self.broadcast_file_info(file_info)
-                            
                             del self.file_transfers[client_socket]
+                    if file_data:
+                        f = file_data['file']
+                        try:
+                            f.close()
+                        except Exception:
+                            pass
+                        filepath = os.path.join(self.files_dir, file_data['filename'])
+                        if filepath:
+                            file_msg = f"📎 File: {file_data['filename']} ({self._format_file_size(file_data['filesize'])})"
+                            self.db.save_message(username, file_msg, message_type='public')
+                            file_info = {
+                                'type': protocol.MSG_FILE,
+                                'payload': {
+                                    'sender': username,
+                                    'filename': file_data['filename'],
+                                    'filesize': file_data['filesize'],
+                                    'filepath': filepath,
+                                    'message': f"{username} đã gửi file: {file_data['filename']}"
+                                },
+                                'encrypted': False
+                            }
+                            self.broadcast_file_info(file_info)
 
         except Exception as e:
             print(f"[ERROR] Error handling client {username}: {e}")
@@ -525,4 +626,5 @@ class ChatServer:
 
 if __name__ == "__main__":
     server = ChatServer()
+    server.start_file_download_server(port=8000)
     server.start()

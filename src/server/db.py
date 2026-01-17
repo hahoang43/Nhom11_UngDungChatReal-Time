@@ -5,11 +5,15 @@ from datetime import datetime
 from contextlib import contextmanager
 import json
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'chat.db')
+DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../data/chat.db'))
 
 class Database:
     def __init__(self):
         """Khởi tạo kết nối database và tạo các bảng nếu chưa tồn tại"""
+        # Ensure data directory exists
+        data_dir = os.path.dirname(DB_PATH)
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
         self.conn = sqlite3.connect(DB_PATH, check_same_thread=False)
         # Enable foreign keys
         self.conn.execute("PRAGMA foreign_keys = ON")
