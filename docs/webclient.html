@@ -4,444 +4,1031 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💬 Chat Real-Time | Nhóm 11</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>✨ Nhom11 Chat | Real-time Connection</title>
+    <!-- Use Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --info: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --glass: rgba(255, 255, 255, 0.7);
+            --glass-strong: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 50%, #fbcfe8 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            color: var(--dark);
+            overflow: hidden;
+            /* Prevent body scroll if possible */
         }
 
+        /* Ambient Background shapes */
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .shape-1 {
+            background: var(--primary);
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .shape-2 {
+            background: var(--secondary);
+            width: 300px;
+            height: 300px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .shape-3 {
+            background: var(--info);
+            width: 250px;
+            height: 250px;
+            top: 40%;
+            left: 60%;
+        }
+
+        /* Auth Container */
         .auth-container {
             width: 100%;
-            max-width: 400px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 420px;
+            background: var(--glass-strong);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
             padding: 40px;
             text-align: center;
-            z-index: 100;
+            z-index: 10;
+            transition: all 0.4s ease;
         }
 
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 800;
+        }
+
+        .auth-title {
+            color: var(--dark);
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        /* Chat Container */
         .chat-container {
-            width: 100%;
-            max-width: 1000px;
-            height: 700px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 95vw;
+            max-width: 1200px;
+            height: 90vh;
+            background: var(--glass-strong);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: none;
+            /* Flex when active */
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: rgba(248, 250, 252, 0.6);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            display: none;
+            padding: 20px;
         }
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            padding: 15px 25px;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            margin: 20px 0 10px 5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .main-content {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
+        .btn-icon-small {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: bg 0.2s;
         }
 
-        .sidebar {
-            width: 280px;
-            background: #f8f9fa;
-            border-right: 1px solid #ecf0f1;
-            display: flex;
-            flex-direction: column;
+        .btn-icon-small:hover {
+            background: rgba(99, 102, 241, 0.1);
         }
 
-        .sidebar-section {
+        .list-container {
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
-        }
-
-        .sidebar-title {
-            font-size: 11px;
-            font-weight: bold;
-            color: #7f8c8d;
-            text-transform: uppercase;
-            padding: 10px 15px;
-            letter-spacing: 1px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .list-item {
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s;
-            font-size: 14px;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 12px;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
         }
 
         .list-item:hover {
-            transform: translateX(5px);
-            background: #f1f3f5;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transform: translateY(-1px);
         }
 
         .list-item.active {
-            background: #667eea;
+            background: var(--primary);
             color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
+        .list-item.active .status-dot {
+            background: #4ade80;
+            border-color: var(--primary);
+        }
+
+        .list-item.active .item-actions button {
+            color: white;
+            opacity: 0.9;
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.7rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-join {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .btn-join:hover {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-leave {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            visibility: hidden;
+        }
+
+        .list-item:hover .btn-leave {
+            visibility: visible;
+        }
+
+        .btn-leave:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Main Chat Area */
         .chat-main {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: white;
+            position: relative;
+            background: rgba(255, 255, 255, 0.4);
         }
 
         .chat-header {
-            padding: 20px 25px;
-            border-bottom: 1px solid #eee;
-            background: white;
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 5;
         }
 
-        .messages-container {
+        .chat-title h2 {
+            font-size: 1.1rem;
+            color: var(--dark);
+            margin-bottom: 2px;
+        }
+
+        .chat-subtitle {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .messages-area {
             flex: 1;
+            padding: 30px;
             overflow-y: auto;
-            padding: 25px;
-            background: #f8f9fa;
             display: flex;
             flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
         }
 
         .message {
-            margin-bottom: 12px;
+            max-width: 70%;
             padding: 12px 18px;
             border-radius: 18px;
-            max-width: 75%;
-            font-size: 14px;
-            line-height: 1.4;
+            font-size: 0.95rem;
+            line-height: 1.5;
             position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+            animation: fadeIn 0.3s ease;
         }
 
-        .message.sent {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            margin-left: auto;
-            border-bottom-right-radius: 2px;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.received {
             background: white;
-            color: #2c3e50;
-            border-bottom-left-radius: 2px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+        }
+
+        .message.sent {
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
         }
 
         .message.system {
-            background: #e9ecef;
-            color: #495057;
-            text-align: center;
-            max-width: 90%;
-            margin: 10px auto;
-            font-size: 12px;
+            align-self: center;
+            background: rgba(0, 0, 0, 0.05);
+            color: #64748b;
             border-radius: 20px;
+            font-size: 0.8rem;
+            padding: 5px 15px;
+            max-width: 90%;
+            box-shadow: none;
         }
 
-        .btn {
-            padding: 12px 20px;
+        .msg-sender {
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+            opacity: 0.7;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .sent .msg-sender {
+            color: rgba(255, 255, 255, 0.8);
+            text-align: right;
+        }
+
+        .input-area {
+            padding: 20px 30px;
+            background: white;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 12px 18px;
+            outline: none;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .send-btn {
+            background: var(--primary);
+            color: white;
             border: none;
+            width: 45px;
+            height: 45px;
             border-radius: 12px;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-            width: 100%;
-        }
-
-        .btn-green {
-            background: #2ed573;
-            color: white;
-            margin: 15px;
-        }
-
-        .tab-buttons {
+            transition: all 0.2s;
             display: flex;
-            background: #f1f3f5;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .send-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        /* Generic UI Elements */
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.05);
             padding: 5px;
-            border-radius: 15px;
+            border-radius: 12px;
             margin-bottom: 25px;
         }
 
-        .tab-btn {
+        .tab {
             flex: 1;
             padding: 10px;
             border: none;
             background: transparent;
-            border-radius: 10px;
             cursor: pointer;
+            border-radius: 8px;
             font-weight: 600;
-            color: #adb5bd;
+            color: #64748b;
+            transition: all 0.2s;
         }
 
-        .tab-btn.active {
+        .tab.active {
             background: white;
-            color: #667eea;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 15px;
-            border-radius: 12px;
-            border: 2px solid #f1f3f5;
-            margin-bottom: 15px;
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        .input-field:focus {
-            border-color: #667eea;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .hidden {
             display: none !important;
         }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: var(--dark);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @keyframes fadein {
+            from {
+                bottom: 0;
+                opacity: 0;
+            }
+
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeout {
+            from {
+                bottom: 30px;
+                opacity: 1;
+            }
+
+            to {
+                bottom: 0;
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <!-- Auth Section -->
-    <div id="authPanel" class="auth-container">
-        <h2 style="margin-bottom: 10px; color: #2c3e50;">Chào mừng bạn!</h2>
-        <p style="color: #7f8c8d; margin-bottom: 25px; font-size: 14px;">Vui lòng đăng nhập hoặc đăng ký</p>
+    <!-- Background Elements -->
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
 
-        <div class="tab-buttons">
-            <button id="tabLogin" class="tab-btn active" onclick="switchAuth('login')">Đăng Nhập</button>
-            <button id="tabRegister" class="tab-btn" onclick="switchAuth('register')">Đăng Ký</button>
+    <!-- Auth Panel -->
+    <div id="authPanel" class="auth-container">
+        <div class="logo"><i class="fa-brands fa-rocketchat"></i></div>
+        <h2 class="auth-title">Chào mừng trở lại</h2>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchAuth('login')" id="tabLogin">Đăng Nhập</button>
+            <button class="tab" onclick="switchAuth('register')" id="tabRegister">Đăng Ký</button>
         </div>
 
         <div id="loginForm">
-            <input type="text" id="loginUser" class="input-field" placeholder="Tên đăng nhập">
-            <input type="password" id="loginPass" class="input-field" placeholder="Mật khẩu">
-            <button onclick="handleAuth('LOGIN')" class="btn btn-primary">Đăng Nhập</button>
+            <div class="input-group">
+                <input type="text" id="loginUser" placeholder="Tên đăng nhập" onkeypress="handleEnter(event, 'LOGIN')">
+            </div>
+            <div class="input-group">
+                <input type="password" id="loginPass" placeholder="Mật khẩu" onkeypress="handleEnter(event, 'LOGIN')">
+            </div>
+            <button onclick="handleAuth('LOGIN')" class="btn-primary">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập
+            </button>
         </div>
 
         <div id="registerForm" class="hidden">
-            <input type="text" id="regUser" class="input-field" placeholder="Tên đăng nhập">
-            <input type="password" id="regPass" class="input-field" placeholder="Mật khẩu">
-            <input type="password" id="regConfirm" class="input-field" placeholder="Xác nhận mật khẩu">
-            <button onclick="handleAuth('REGISTER')" class="btn btn-primary">Đăng Ký</button>
+            <div class="input-group">
+                <input type="text" id="regUser" placeholder="Tên đăng nhập" onkeypress="handleEnter(event, 'REGISTER')">
+            </div>
+            <div class="input-group">
+                <input type="password" id="regPass" placeholder="Mật khẩu" onkeypress="handleEnter(event, 'REGISTER')">
+            </div>
+            <div class="input-group">
+                <input type="password" id="regConfirm" placeholder="Xác nhận mật khẩu"
+                    onkeypress="handleEnter(event, 'REGISTER')">
+            </div>
+            <button onclick="handleAuth('REGISTER')" class="btn-primary">
+                <i class="fa-solid fa-user-plus"></i> Đăng Ký
+            </button>
         </div>
 
-        <p id="authError" style="color: #ff4757; margin-top: 15px; font-size: 13px;"></p>
+        <p id="authError" style="color: var(--danger); margin-top: 15px; font-size: 0.85rem; height: 1.2em;"></p>
     </div>
 
-    <!-- Chat Section -->
+    <!-- Chat Interface -->
     <div id="chatPanel" class="chat-container">
-        <div class="header">
-            <h1 style="font-size: 18px;">💬 Chat Real-Time | Nhóm 11</h1>
-            <div id="currentUserDisplay" style="font-weight: 500;"></div>
-        </div>
-
-        <div class="main-content">
-            <div class="sidebar">
-                <button onclick="createNewGroup()" class="btn btn-green">➕ Tạo nhóm mới</button>
-                <div class="sidebar-title">👥 Danh sách Nhóm</div>
-                <div id="groupsList" class="sidebar-section"></div>
-                <div class="sidebar-title">👥 Người dùng Online</div>
-                <div id="usersList" class="sidebar-section"></div>
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="user-profile">
+                <div class="avatar" id="myAvatar">U</div>
+                <div style="flex: 1;">
+                    <h3 style="font-size: 1rem" id="myNameDisplay">User</h3>
+                    <div
+                        style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--success); font-weight: 500;">
+                        <span style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></span>
+                        Online
+                    </div>
+                </div>
             </div>
 
-            <div class="chat-main">
-                <div class="chat-header">
-                    <h2 id="targetName" style="font-size: 16px; color: #495057;">🌐 Chat Công Khai</h2>
+            <!-- Groups Section -->
+            <div class="section-title">
+                Khám phá Nhóm
+                <button class="btn-icon-small" title="Tạo nhóm mới" onclick="createNewGroup()">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+            <div class="list-container" id="groupsList">
+                <!-- Group Items injected here -->
+            </div>
+
+            <!-- Users Section -->
+            <div class="section-title" style="margin-top: 25px;">
+                Người dùng Online
+                <span class="btn-icon-small"><i class="fa-solid fa-users"></i></span>
+            </div>
+            <div class="list-container" id="usersList">
+                <!-- User Items injected here -->
+            </div>
+        </div>
+
+        <!-- Main Chat -->
+        <div class="chat-main">
+            <div class="chat-header">
+                <div class="avatar" style="background: var(--info);" id="targetAvatar">🌐</div>
+                <div class="chat-title">
+                    <h2 id="targetName">Chat Công Khai</h2>
+                    <div class="chat-subtitle" id="targetStatus">Hội thoại chung</div>
                 </div>
-                <div id="messages" class="messages-container"></div>
-                <div class="header" style="background: white; border-top: 1px solid #eee; padding: 15px;">
-                    <input type="text" id="chatInput" class="input-field" style="margin-bottom: 0; border-radius: 25px;"
-                        placeholder="Nhập tin nhắn...">
-                    <button id="sendBtn" class="btn btn-primary"
-                        style="width: 80px; margin-left: 10px; border-radius: 25px;">Gửi</button>
-                </div>
+            </div>
+
+            <div class="messages-area" id="messages">
+                <!-- Messages injected here -->
+                <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
+            </div>
+
+            <div class="input-area">
+                <button class="btn-icon-small" title="Gửi File (Sắp ra mắt)" style="font-size: 1.2rem; color: #94a3b8;">
+                    <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." autocomplete="off">
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
         </div>
     </div>
+
+    <div id="toast">Thông báo</div>
 
     <script>
         let ws = null;
         let myName = "";
-        let currentTarget = "Public:Public";
+        let currentTarget = "Public:Public"; // Type:ID
+        let myGroups = new Set(); // Stores group IDs I am a member of
 
+        // --- Auth UI Logic ---
         function switchAuth(mode) {
-            document.getElementById('loginForm').classList.toggle('hidden', mode === 'register');
-            document.getElementById('registerForm').classList.toggle('hidden', mode === 'login');
-            document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
-            document.getElementById('tabRegister').classList.toggle('active', mode === 'register');
+            const loginForm = document.getElementById('loginForm');
+            const regForm = document.getElementById('registerForm');
+            const tabLogin = document.getElementById('tabLogin');
+            const tabReg = document.getElementById('tabRegister');
+            const title = document.querySelector('.auth-title');
+
+            if (mode === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                tabLogin.classList.add('active');
+                tabReg.classList.remove('active');
+                title.textContent = "Chào mừng trở lại";
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                tabLogin.classList.remove('active');
+                tabReg.classList.add('active');
+                title.textContent = "Tạo tài khoản mới";
+            }
             document.getElementById('authError').textContent = "";
         }
 
+        function handleEnter(e, type) {
+            if (e.key === 'Enter') handleAuth(type);
+        }
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = "show";
+            setTimeout(() => { el.className = el.className.replace("show", ""); }, 3000);
+        }
+
+        // --- WebSocket Logic ---
         function handleAuth(type) {
-            const user = (type === 'LOGIN' ? document.getElementById('loginUser') : document.getElementById('regUser')).value.trim();
-            const pass = (type === 'LOGIN' ? document.getElementById('loginPass') : document.getElementById('regPass')).value.trim();
+            const userIn = type === 'LOGIN' ? document.getElementById('loginUser') : document.getElementById('regUser');
+            const passIn = type === 'LOGIN' ? document.getElementById('loginPass') : document.getElementById('regPass');
+            const username = userIn.value.trim();
+            const password = passIn.value.trim();
 
             if (type === 'REGISTER') {
                 const conf = document.getElementById('regConfirm').value.trim();
-                if (pass !== conf) { alert("Mật khẩu không khớp!"); return; }
+                if (password !== conf) {
+                    document.getElementById('authError').textContent = "Mật khẩu không khớp!";
+                    return;
+                }
             }
 
-            if (!user || !pass) { alert("Vui lòng nhập đầy đủ!"); return; }
+            if (!username || !password) {
+                document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
+                return;
+            }
 
             if (!ws || ws.readyState !== WebSocket.OPEN) {
                 const host = window.location.hostname || 'localhost';
                 ws = new WebSocket('ws://' + host + ':5555');
-                ws.onopen = () => sendAuth(type, user, pass);
-                ws.onmessage = handleMessage;
+
+                ws.onopen = () => {
+                    sendJson(type, { username, password });
+                    myName = username;
+                };
+
+                ws.onmessage = handleServerMessage;
+
                 ws.onerror = (err) => {
-                    console.error("WebSocket Error:", err);
-                    document.getElementById('authError').textContent = "Không thể kết nối đến server (Hãy chắc chắn server đã chạy)";
+                    console.error("WS Error", err);
+                    document.getElementById('authError').textContent = "Không thể kết nối đến server!";
                 };
+
                 ws.onclose = () => {
-                    console.log("WebSocket Closed");
-                    // Only alert if we were previously logged in or if it's a persistent failure
                     if (document.getElementById('chatPanel').style.display === 'flex') {
-                        alert("Mất kết nối với server!");
-                        location.reload();
+                        showToast("Đã mất kết nối với Server");
+                        setTimeout(() => location.reload(), 2000);
                     }
-                };
+                }
             } else {
-                sendAuth(type, user, pass);
+                sendJson(type, { username, password });
+                myName = username;
             }
         }
 
-        function sendAuth(type, username, password) {
-            ws.send(JSON.stringify({ type: type, payload: { username, password } }));
-            myName = username;
+        function sendJson(type, payload) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type, payload }));
+            }
         }
 
-        function handleMessage(event) {
-            const data = JSON.parse(event.data);
-            console.log("Receive:", data);
+        function handleServerMessage(event) {
+            let data;
+            try { data = JSON.parse(event.data); } catch (e) { return; }
+            console.log("Recv:", data);
 
             switch (data.type) {
                 case 'LOGIN_SUCCESS':
-                    document.getElementById('authPanel').classList.add('hidden');
-                    document.getElementById('chatPanel').style.display = 'flex';
-                    document.getElementById('currentUserDisplay').textContent = `👤 ${myName}`;
-                    appendMsg("Chào mừng bạn đã tham gia!", 'system');
+                    enterChatMode();
                     break;
                 case 'ERROR':
                     document.getElementById('authError').textContent = data.payload;
+                    showToast(data.payload);
                     break;
-                case 'TEXT':
-                    appendMsg(data.payload);
+                case 'SUCCESS':
+                    showToast(data.payload);
+                    break;
+                case 'TEXT': // Public msg
+                    // If current target is Public, show it
+                    // Otherwise maybe show notification dot (todo)
+                    if (currentTarget === 'Public:Public') {
+                        appendMessage(data.payload);
+                    }
                     break;
                 case 'PRIVATE':
-                    appendMsg(`[Riêng từ ${data.payload.sender}]: ${data.payload.content}`, 'received');
+                    // payload: {sender, content}
+                    // Only show if talking to sender, or update UI
+                    if (currentTarget === `User:${data.payload.sender}`) {
+                        appendMessage(data.payload.content, 'received', data.payload.sender);
+                    } else {
+                        showToast(`Tin nhắn mới từ ${data.payload.sender}`);
+                    }
                     break;
                 case 'GROUP':
-                    appendMsg(`[Nhóm ${data.payload.group_id}] ${data.payload.sender}: ${data.payload.content}`, 'received');
+                    // payload: {sender, group_id, content}
+                    if (currentTarget === `Group:${data.payload.group_id}`) {
+                        appendMessage(data.payload.content, 'received', data.payload.sender);
+                    }
                     break;
                 case 'USERS_LIST':
-                    const ulist = document.getElementById('usersList');
-                    ulist.innerHTML = '';
-                    data.payload.forEach(u => {
-                        if (u === myName) return;
-                        const div = createListItem(u, 'User', '👤');
-                        div.onclick = () => setTarget(u, u, 'User');
-                        ulist.appendChild(div);
-                    });
+                    renderUsers(data.payload);
                     break;
                 case 'GROUPS_LIST':
-                    const glist = document.getElementById('groupsList');
-                    glist.innerHTML = '';
-                    data.payload.forEach(g => {
-                        const div = createListItem(g.name, 'Group', '👥', g.id);
-                        div.onclick = () => setTarget(g.id, g.name, 'Group');
-                        glist.appendChild(div);
-                    });
+                    renderGroups(data.payload);
                     break;
             }
         }
 
-        function createListItem(name, type, icon, id) {
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.id = `item-${type}-${id || name}`;
-            div.innerHTML = `<span>${icon}</span> ${name}`;
-            return div;
+        function enterChatMode() {
+            document.getElementById('authPanel').style.display = 'none';
+            document.getElementById('chatPanel').style.display = 'flex';
+            document.getElementById('myNameDisplay').textContent = myName;
+            document.getElementById('myAvatar').textContent = myName.charAt(0).toUpperCase();
+
+            // Set default target
+            setTarget('Public', 'Public', 'Chat Công Khai');
         }
 
-        function setTarget(id, name, type) {
+        // --- Chat UI Rendering ---
+        function renderUsers(users) {
+            const container = document.getElementById('usersList');
+            container.innerHTML = '';
+
+            users.forEach(u => {
+                if (u === myName) return;
+
+                const div = document.createElement('div');
+                div.className = `list-item ${currentTarget === `User:${u}` ? 'active' : ''}`;
+                div.innerHTML = `
+                    <div class="item-info">
+                        <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: #e2e8f0; color: #64748b;">${u.charAt(0).toUpperCase()}</div>
+                        <span>${u}</span>
+                    </div>
+                    <span class="status-dot" style="width: 8px; height: 8px; background: #4ade80; border-radius: 50%;"></span>
+                `;
+                div.onclick = () => setTarget('User', u, u);
+                container.appendChild(div);
+            });
+        }
+
+        function renderGroups(groups) {
+            // Check membership logic? 
+            // Currently server doesn't send "my groups" vs "all groups" plainly,
+            // but we can infer or simpler: user creates -> is member. join -> is member.
+            // For now, assume we need to track membership locally or try to send msg and fail.
+            // BETTER: The server "Join" response sends "Joined group X".
+            // Since we don't have persistent state sync on verify, we'll let user try to click.
+
+            const container = document.getElementById('groupsList');
+            container.innerHTML = '';
+
+            groups.forEach(g => {
+                const isMember = myGroups.has(g.id);
+                const isActive = currentTarget === `Group:${g.id}`;
+
+                const div = document.createElement('div');
+                div.className = `list-item ${isActive ? 'active' : ''}`;
+                div.innerHTML = `
+                   <div class="item-info" onclick="setTarget('Group', '${g.id}', '${g.name}')">
+                        <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: var(--secondary);">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <span>${g.name}</span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="action-btn btn-join ${isMember ? 'hidden' : ''}" onclick="joinGroup(${g.id}, '${g.name}')">Join</button>
+                        <button class="action-btn btn-leave ${isMember ? '' : 'hidden'}" onclick="leaveGroup(${g.id})">Leave</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function setTarget(type, id, name) {
             currentTarget = `${type}:${id}`;
-            document.getElementById('targetName').textContent = (type === 'Public' ? '🌐' : (type === 'User' ? '👤' : '👥')) + ' ' + name;
+            const targetNameEl = document.getElementById('targetName');
+            const targetStatusEl = document.getElementById('targetStatus');
+            const targetAvatarEl = document.getElementById('targetAvatar');
 
+            targetNameEl.textContent = name;
+
+            // Update UI Active State
+            // (Re-rendering lists would be cleaner but heavier, so just toggle active class manually or rely on list refresh)
             document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
-            const activeEl = document.getElementById(`item-${type}-${id}`);
-            if (activeEl) activeEl.classList.add('active');
+            // Find element to active ?? Difficult without ID. 
+            // Ideally we re-render or add IDs to elements.
+            // Let's just update header for now.
 
-            appendMsg(`--- Đang chuyển sang: ${name} ---`, 'system');
+            if (type === 'Public') {
+                targetStatusEl.textContent = "Hội thoại chung với mọi người";
+                targetAvatarEl.innerHTML = '🌐';
+                targetAvatarEl.style.background = 'var(--info)';
+            } else if (type === 'User') {
+                targetStatusEl.textContent = "Tin nhắn riêng tư";
+                targetAvatarEl.innerHTML = name.charAt(0).toUpperCase();
+                targetAvatarEl.style.background = '#e2e8f0';
+                targetAvatarEl.style.color = '#64748b';
+            } else if (type === 'Group') {
+                targetStatusEl.textContent = `Nhóm ID: ${id}`;
+                targetAvatarEl.innerHTML = '<i class="fa-solid fa-users"></i>';
+                targetAvatarEl.style.background = 'var(--secondary)';
+            }
+
+            document.getElementById('messages').innerHTML = ''; // Clear chat on switch? Or keep history?
+            // Real app would fetch history here.
+
+            // To be nice, let's keep it empty or show a system msg
+            appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
         }
 
-        function appendMsg(txt, type = 'received') {
-            const div = document.createElement('div');
-            div.className = `message ${type}`;
-            div.textContent = txt;
-            document.getElementById('messages').appendChild(div);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        // --- Actions ---
+        function createNewGroup() {
+            const name = prompt("Nhập tên nhóm mới:");
+            if (name) {
+                // Fix: Send string directly as payload for MSG_GROUP_CREATE
+                sendJson('GROUP_CREATE', name);
+                // Assume success -> add to myGroups? Server sends MSG_GROUPS_LIST update.
+                // We also need to know ID to add to myGroups. 
+                // The server response to create is: {'type': 'SUCCESS', 'payload': "Group '...' created with ID X"}
+                // Provide a way to parse ID?
+                // For now, user has to Click "Join" on the new group if not auto-joined, 
+                // BUT Server code: create_group adds creator to members.
+                // So we should add to myGroups.
+                // We'll rely on "Try to chat". Or we need to parse the SUCCESS message.
+                // Let's just prompt user to refresh or re-click.
+            }
+        }
+
+        function joinGroup(gid, gname) {
+            sendJson('GROUP_JOIN', gid);
+            myGroups.add(gid);
+            // Request list update to re-render buttons
+            ws.send(JSON.stringify({ type: 'GROUPS_LIST_REQUEST', payload: null }));
+            // Note: Protocol doesn't have explicit list request, but server broadcasts on changes.
+            // We can manually trigger re-render if we had the list.
+            // Let's just reload the visual state of that button
+            event.target.classList.add('hidden');
+            event.target.nextElementSibling.classList.remove('hidden');
+            showToast(`Đã tham gia nhóm ${gname}`);
+        }
+
+        function leaveGroup(gid) {
+            if (!confirm("Bạn có chắc muốn rời nhóm?")) return;
+            sendJson('GROUP_LEAVE', gid);
+            myGroups.delete(gid);
+            event.target.classList.add('hidden');
+            event.target.previousElementSibling.classList.remove('hidden');
+            if (currentTarget === `Group:${gid}`) {
+                setTarget('Public', 'Public', 'Chat Công Khai');
+            }
+            showToast("Đã rời nhóm");
         }
 
         function sendMessage() {
             const input = document.getElementById('chatInput');
             const txt = input.value.trim();
-            if (!txt || !ws) return;
+            if (!txt) return;
 
+            // Check Msg Type
             if (currentTarget === 'Public:Public') {
-                ws.send(JSON.stringify({ type: 'TEXT', payload: txt }));
-                appendMsg(`Bạn: ${txt}`, 'sent');
+                sendJson('TEXT', txt);
+                appendMessage(txt, 'sent');
             } else if (currentTarget.startsWith('User:')) {
-                const target = currentTarget.split(':')[1];
-                ws.send(JSON.stringify({ type: 'PRIVATE', payload: { receiver: target, content: txt } }));
-                appendMsg(`[Gửi ${target}]: ${txt}`, 'sent');
+                const targetUser = currentTarget.split(':')[1];
+                sendJson('PRIVATE', { receiver: targetUser, content: txt });
+                appendMessage(txt, 'sent');
             } else if (currentTarget.startsWith('Group:')) {
-                const gid = currentTarget.split(':')[1];
-                ws.send(JSON.stringify({ type: 'GROUP', payload: { group_id: parseInt(gid), content: txt } }));
-                appendMsg(`[Gửi Nhóm]: ${txt}`, 'sent');
+                const groupId = parseInt(currentTarget.split(':')[1]);
+                if (!myGroups.has(groupId)) {
+                    // Quick check, though server also checks
+                    // We might define 'myGroups' better.
+                    // For now, let's just send.
+                }
+                sendJson('GROUP', { group_id: groupId, content: txt });
+                appendMessage(txt, 'sent');
             }
             input.value = '';
         }
 
-        function createNewGroup() {
-            const name = prompt("Nhập tên nhóm mới:");
-            if (name) ws.send(JSON.stringify({ type: 'GROUP_CREATE', payload: { name: name } }));
+        // --- Chat Bubbles ---
+        function appendMessage(content, type = 'received', sender = '') {
+            const container = document.getElementById('messages');
+
+            // Parse content for "Sender: " prefix if Public text (from server broadcast)
+            // Server format: "User: content" or "[timestamp] User: content" (history)
+
+            let displayContent = content;
+            let displaySender = sender;
+
+            if (type === 'received' && !sender) {
+                // Try to split logic for Public messages
+                if (content.includes(':')) {
+                    const parts = content.split(':');
+                    if (parts.length >= 2) {
+                        // Very rough heuristic
+                        if (!displaySender) displaySender = parts[0].trim();
+                        // displayContent = parts.slice(1).join(':').trim(); 
+                        // Keep full content for now to be safe against complex strings
+                    }
+                }
+            }
+
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+
+            let html = '';
+            if (displaySender && type !== 'sent' && type !== 'system') {
+                html += `<div class="msg-sender">${displaySender}</div>`;
+            }
+            html += `<div>${displayContent}</div>`;
+
+            div.innerHTML = html;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
         }
 
-        document.getElementById('sendBtn').onclick = sendMessage;
-        document.getElementById('chatInput').onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+        // Input Enter Key
+        document.getElementById('chatInput').onkeypress = (e) => {
+            if (e.key === 'Enter') sendMessage();
+        }
+
     </script>
 </body>
 
