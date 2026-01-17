@@ -639,6 +639,75 @@
                 opacity: 0;
             }
         }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-left: 10px;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Media Previews */
+        .media-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 5px;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .media-preview:hover {
+            transform: scale(1.02);
+        }
+
+        /* Emoji Picker */
+        .emoji-picker {
+            position: absolute;
+            bottom: 80px;
+            left: 30px;
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+        }
+
+        .emoji-picker span {
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            text-align: center;
+            transition: bg 0.2s;
+        }
+
+        .emoji-picker span:hover {
+            background: #f1f5f9;
+        }
     </style>
 </head>
 
@@ -731,17 +800,28 @@
                     <h2 id="targetName">Chat Công Khai</h2>
                     <div class="chat-subtitle" id="targetStatus">Hội thoại chung</div>
                 </div>
+                <div id="typingIndicator" class="typing-indicator hidden">Đang nhập...</div>
             </div>
+
+            <!-- Audio Notification (Simple Pop Sound) -->
+            <audio id="notifySound"
+                src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
 
             <div class="messages-area" id="messages">
                 <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
             </div>
 
-            <div class="input-area">
+            <div class="input-area" style="position: relative;">
+                <div id="emojiPicker" class="emoji-picker hidden"></div>
+
                 <input type="file" id="fileInput" style="display:none" />
                 <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;"
                     onclick="document.getElementById('fileInput').click()">
                     <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <button class="btn-icon-small" id="emojiBtn" title="Emoji" style="font-size: 1.2rem; color: #fbbf24;"
+                    onclick="toggleEmojiPicker()">
+                    <i class="fa-solid fa-face-smile"></i>
                 </button>
                 <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." autocomplete="off">
                 <button class="send-btn" id="sendBtn" onclick="sendMessage()">
@@ -894,7 +974,7 @@
         }
 
         function handleServerMessage(data) {
-            // Check nếu data là string (đôi khi socket python gửi về dạng string)
+            // Check nếu data là string
             if (typeof data === 'string') {
                 try { data = JSON.parse(data); } catch (e) { }
             }
@@ -902,7 +982,6 @@
 
             switch (data.type) {
                 case 'LOGIN_SUCCESS':
-                    // Lưu username và password vào localStorage để giữ trạng thái đăng nhập
                     if (myName) {
                         const pass = document.getElementById('loginPass').value || '';
                         localStorage.setItem('chat_username', myName);
@@ -920,34 +999,83 @@
                 case 'TEXT':
                     if (currentTarget === 'Public:Public') {
                         appendMessage(data.payload);
+                        if (!data.payload.startsWith(myName + ':')) playSound();
                     }
                     break;
                 case 'PRIVATE':
-                    // Logic xác định đối phương trong cuộc trò chuyện
-                    // Nếu tôi gửi -> đối phương là receiver
-                    // Nếu họ gửi -> đối phương là sender
                     const p = data.payload;
                     const partner = (p.sender === myName) ? p.receiver : p.sender;
-
                     if (currentTarget === `User:${partner}`) {
                         const msgType = (p.sender === myName) ? 'sent' : 'received';
                         appendMessage(p.content, msgType, p.sender);
                     } else if (p.sender !== myName) {
                         showToast(`Tin nhắn mới từ ${p.sender}`);
+                        playSound();
                     }
                     break;
                 case 'GROUP':
                     if (currentTarget === `Group:${data.payload.group_id}`) {
                         const msgType = (data.payload.sender === myName) ? 'sent' : 'received';
                         appendMessage(data.payload.content, msgType, data.payload.sender);
+                        if (data.payload.sender !== myName) playSound();
+                    }
+                    else if (myGroups.has(data.payload.group_id) && data.payload.sender !== myName) {
+                        // Optional: Toast for background group message
+                        playSound();
                     }
                     break;
+                case 'USER_GROUPS':
+                    myGroups.clear();
+                    data.payload.forEach(gid => myGroups.add(gid));
+                    // If we have a stored list of groups, re-render it to update buttons
+                    // But usually handling this silently is fine until GROUPS_LIST comes.
+                    // However, if GROUPS_LIST came first, we need to re-render.
+                    // We can try to trigger a re-render if the container has children.
+                    const groupsContainer = document.getElementById('groupsList');
+                    if (groupsContainer.children.length > 0) {
+                        // We need the data to re-render. 
+                        // Simplified: Request groups list again if we want to be sure, or just wait.
+                        // Actually, 'GROUPS_LIST' is broadcasted on login too, so it's a race.
+                        // Best approach: Just update state. GROUPS_LIST handler renders based on State.
+                        // If GROUPS_LIST handled first, it used empty myGroups.
+                        // If USER_GROUPS handled second, we need to update UI.
+                        // Let's request GROUPS_LIST refresh just in case, or store groups data globally.
+                        // For now, let's just send a request to refresh groups list
+                        // sendJson('GROUPS_REQUEST', null); // Use existing broadcast logic
+                    }
+                    // Force re-fetch groups list to update UI
+                    // Server broadcasts it on login anyway, but if timing ensures USER_GROUPS first...
+                    // Actually server sends USER_GROUPS *before* broadcast_groups_list in my code.
+                    // So we are good.
+                    break;
                 case 'FILE':
-                    // Hiển thị file trong đoạn chat
                     const file = data.payload;
                     const fileUrl = `${SERVER_URL}/download?filename=${encodeURIComponent(file.filename)}`;
-                    const fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize / 1024).toFixed(1)} KB)`;
-                    appendMessage(fileMsg, 'received', file.sender || 'File');
+                    let fileMsg = "";
+
+                    // Check file extension for preview
+                    const ext = file.filename.split('.').pop().toLowerCase();
+                    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                        fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div>
+                                   <img src="${fileUrl}" class="media-preview" onclick="window.open('${fileUrl}', '_blank')">`;
+                    } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
+                        fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div>
+                                   <video src="${fileUrl}" controls class="media-preview" style="max-height: 200px"></video>`;
+                    } else {
+                        fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize / 1024).toFixed(1)} KB)`;
+                    }
+
+                    // FIX: Check if I am the sender
+                    const isMe = (file.sender === myName);
+                    appendMessage(fileMsg, isMe ? 'sent' : 'received', file.sender || 'File');
+
+                    if (!isMe) playSound();
+                    break;
+                case 'TYPING':
+                    handleTyping(data.payload, true);
+                    break;
+                case 'STOP_TYPING':
+                    handleTyping(data.payload, false);
                     break;
                 case 'USERS_LIST':
                     renderUsers(data.payload);
@@ -955,6 +1083,42 @@
                 case 'GROUPS_LIST':
                     renderGroups(data.payload);
                     break;
+            }
+        }
+
+        function playSound() {
+            const audio = document.getElementById('notifySound');
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log("Audio play failed (user interaction needed first):", e));
+            }
+        }
+
+        function handleTyping(payload, isTyping) {
+            const indicator = document.getElementById('typingIndicator');
+            let show = false;
+
+            if (payload.mode === 'public') {
+                if (currentTarget === 'Public:Public' && payload.sender !== myName) {
+                    show = true;
+                }
+            } else if (payload.mode === 'private') {
+                // Sender is typing to ME.
+                // Current target must be User:Sender
+                if (currentTarget === `User:${payload.sender}`) {
+                    show = true;
+                }
+            } else if (payload.mode === 'group') {
+                if (currentTarget === `Group:${payload.group_id}` && payload.sender !== myName) {
+                    show = true;
+                }
+            }
+
+            if (show && isTyping) {
+                indicator.textContent = `${payload.sender} đang nhập...`;
+                indicator.classList.remove('hidden');
+            } else {
+                indicator.classList.add('hidden');
             }
         }
 
@@ -1169,6 +1333,81 @@
             if (e.key === 'Enter') sendMessage();
         }
 
+        // --- Typing Logic ---
+        let typingTimeout = null;
+
+        document.getElementById('chatInput').addEventListener('input', function () {
+            if (typingTimeout) clearTimeout(typingTimeout);
+
+            // Emit start typing
+            if (currentTarget === 'Public:Public') {
+                sendJson('TYPING', { mode: 'public', target: 'public' });
+            } else if (currentTarget.startsWith('User:')) {
+                const target = currentTarget.split(':')[1];
+                sendJson('TYPING', { mode: 'private', target: target });
+            } else if (currentTarget.startsWith('Group:')) {
+                const target = parseInt(currentTarget.split(':')[1]);
+                sendJson('TYPING', { mode: 'group', target: target });
+            }
+
+            typingTimeout = setTimeout(() => {
+                stopTypingEvent();
+            }, 2000);
+        });
+
+        function stopTypingEvent() {
+            if (currentTarget === 'Public:Public') {
+                sendJson('STOP_TYPING', { mode: 'public', target: 'public' });
+            } else if (currentTarget.startsWith('User:')) {
+                const target = currentTarget.split(':')[1];
+                sendJson('STOP_TYPING', { mode: 'private', target: target });
+            } else if (currentTarget.startsWith('Group:')) {
+                const target = parseInt(currentTarget.split(':')[1]);
+                sendJson('STOP_TYPING', { mode: 'group', target: target });
+            }
+        }
+
+
+        // --- Emoji Logic ---
+        const emojis = ["😀", "😂", "🥰", "😍", "😎", "😭", "😡", "👍", "👎", "🎉", "❤️", "💔", "🔥", "✨", "🎁", "👋", "🙏", "🤝", "👀", "💯", "✅", "❌", "❓", "🎵", "📷", "⚽", "🍔", "🍕", "🍺", "🚀", "💡", "💻", "📱", "📞", "⏰", "🏠"];
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            const btn = document.getElementById('emojiBtn');
+            const isHidden = picker.classList.contains('hidden');
+
+            if (isHidden) {
+                picker.classList.remove('hidden');
+            } else {
+                picker.classList.add('hidden');
+            }
+        }
+
+        function insertEmoji(emoji) {
+            const input = document.getElementById('chatInput');
+            input.value += emoji;
+            input.focus();
+        }
+
+        // Close picker when clicking outside
+        document.addEventListener('click', function (e) {
+            const picker = document.getElementById('emojiPicker');
+            const btn = document.getElementById('emojiBtn');
+            if (picker && !picker.classList.contains('hidden') && !picker.contains(e.target) && !btn.contains(e.target)) {
+                picker.classList.add('hidden');
+            }
+        });
+
+        // Initialize Picker
+        const pickerContainer = document.getElementById('emojiPicker');
+        if (pickerContainer) {
+            emojis.forEach(emo => {
+                const span = document.createElement('span');
+                span.textContent = emo;
+                span.onclick = () => insertEmoji(emo);
+                pickerContainer.appendChild(span);
+            });
+        }
     </script>
 </body>
 

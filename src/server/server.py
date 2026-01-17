@@ -79,6 +79,15 @@ def handle_message(data):
             
             # Send history
             send_history(sid, username)
+
+            # Restore group memberships
+            user_groups = db.get_user_groups(username)
+            group_ids = []
+            for g in user_groups:
+                gid = g['id']
+                join_room(f"group_{gid}")
+                group_ids.append(gid)
+            emit('message', {'type': 'USER_GROUPS', 'payload': group_ids})
             
             # Broadcast join message
             emit('message', {
@@ -100,6 +109,11 @@ def handle_message(data):
             if db.register_user(username, password):
                 clients[sid] = username
                 emit('message', {'type': 'LOGIN_SUCCESS', 'payload': f'Welcome {username}!'})
+                
+                # Restore group memberships (should be empty for new user, but good for consistency/future proofing)
+                # Actually for new user it's empty, so we can skip or just send empty list
+                emit('message', {'type': 'USER_GROUPS', 'payload': []})
+
                 broadcast_users_list()
                 broadcast_groups_list()
             else:
@@ -148,7 +162,8 @@ def handle_message(data):
         target = payload.get('target')
         if history_type == 'private' and target:
             history = db.get_history(50, message_type='private', username=target)
-            for row in reversed(list(history)): # Send in chronological order
+            print(f"DEBUG: Sending private history ({len(history)} items). First: {history[0]['timestamp'] if history else 'None'}, Last: {history[-1]['timestamp'] if history else 'None'}")
+            for row in history: # Send in chronological order
                 emit('message', {
                     'type': protocol.MSG_PRIVATE,
                     'payload': {
@@ -160,7 +175,7 @@ def handle_message(data):
                 })
         elif history_type == 'group' and target:
             history = db.get_history(50, message_type='group', group_id=target)
-            for row in reversed(list(history)):
+            for row in history:
                 emit('message', {
                     'type': protocol.MSG_GROUP,
                     'payload': {
@@ -246,6 +261,50 @@ def handle_message(data):
             }
             emit('message', broadcast_msg, broadcast=True)
             del file_transfers[sid]
+
+    elif msg_type == protocol.MSG_TYPING:
+        target_mode = payload.get('mode') # 'private' or 'group'
+        target_id = payload.get('target') # username or group_id
+        
+        if target_mode == 'private':
+            target_sid = get_sid_by_username(target_id)
+            if target_sid:
+                emit('message', {
+                    'type': protocol.MSG_TYPING,
+                    'payload': {'sender': username, 'mode': 'private'}
+                }, room=target_sid)
+        elif target_mode == 'group':
+             emit('message', {
+                    'type': protocol.MSG_TYPING,
+                    'payload': {'sender': username, 'mode': 'group', 'group_id': target_id}
+                }, room=f"group_{target_id}", include_self=False)
+        elif target_mode == 'public':
+            emit('message', {
+                'type': protocol.MSG_TYPING,
+                'payload': {'sender': username, 'mode': 'public'}
+            }, broadcast=True, include_self=False)
+
+    elif msg_type == protocol.MSG_STOP_TYPING:
+        target_mode = payload.get('mode')
+        target_id = payload.get('target')
+        
+        if target_mode == 'private':
+            target_sid = get_sid_by_username(target_id)
+            if target_sid:
+                emit('message', {
+                    'type': protocol.MSG_STOP_TYPING,
+                    'payload': {'sender': username, 'mode': 'private'}
+                }, room=target_sid)
+        elif target_mode == 'group':
+             emit('message', {
+                    'type': protocol.MSG_STOP_TYPING,
+                    'payload': {'sender': username, 'mode': 'group', 'group_id': target_id}
+                }, room=f"group_{target_id}", include_self=False)
+        elif target_mode == 'public':
+            emit('message', {
+                'type': protocol.MSG_STOP_TYPING,
+                'payload': {'sender': username, 'mode': 'public'}
+            }, broadcast=True, include_self=False)
 
 def format_file_size(size_bytes):
     if size_bytes < 1024:
