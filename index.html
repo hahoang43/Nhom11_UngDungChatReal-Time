@@ -512,6 +512,81 @@
             background: #94a3b8;
         }
 
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+                overflow: hidden; /* Prevent body scroll, handle internally */
+            }
+
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                max-width: none;
+                flex-direction: row; /* Keep flex row but toggle visibility */
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                z-index: 20;
+            }
+
+            .chat-main {
+                display: none; /* Hidden by default on mobile */
+                width: 100%;
+                height: 100vh;
+                position: absolute; /* Overlay sidebar */
+                top: 0;
+                left: 0;
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                z-index: 30;
+            }
+
+            /* State: Chat Active (Show Chat, Hide Sidebar) */
+            .mobile-show-chat .sidebar {
+                display: none;
+            }
+
+            .mobile-show-chat .chat-main {
+                display: flex;
+            }
+            
+            .back-btn {
+                display: inline-flex !important;
+            }
+            
+            /* Adjust inputs for mobile */
+            .input-area {
+                padding: 10px 15px;
+            }
+            .chat-input {
+                 border-radius: 20px;
+            }
+            .send-btn {
+                 width: 40px;
+                 height: 40px;
+                 border-radius: 50%;
+            }
+        }
+
+        .back-btn {
+            display: none;
+            margin-right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--primary);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+        }
+        
+        .back-btn:hover {
+            background: rgba(0,0,0,0.05);
+        }
+
         /* Toast Notification */
         #toast {
             visibility: hidden;
@@ -641,6 +716,9 @@
 
         <div class="chat-main">
             <div class="chat-header">
+                <button class="back-btn" onclick="backToSidebar()">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
                 <div class="avatar" style="background: var(--info);" id="targetAvatar">🌐</div>
                 <div class="chat-title">
                     <h2 id="targetName">Chat Công Khai</h2>
@@ -980,6 +1058,15 @@
                 sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
             }
             appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
+            
+            // Mobile: Switch to chat view
+            if (window.innerWidth <= 768) {
+                document.getElementById('chatPanel').classList.add('mobile-show-chat');
+            }
+        }
+        
+        function backToSidebar() {
+             document.getElementById('chatPanel').classList.remove('mobile-show-chat');
         }
 
         // --- Actions ---
