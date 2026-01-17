@@ -44,11 +44,33 @@ class Database:
                 content TEXT NOT NULL,
                 message_type TEXT DEFAULT 'public',
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (sender) REFERENCES users(username),
-                FOREIGN KEY (receiver) REFERENCES users(username)
+                FOREIGN KEY (sender) REFERENCES users(username)
             )
         ''')
         
+        # Bảng groups: Lưu thông tin nhóm chat
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                creator TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (creator) REFERENCES users(username)
+            )
+        ''')
+
+        # Bảng group_members: Lưu thành viên của nhóm
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS group_members (
+                group_id INTEGER,
+                username TEXT,
+                joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (group_id, username),
+                FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+                FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+            )
+        ''');
+
         # Tạo indexes để tăng hiệu suất truy vấn
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_messages_timestamp 
@@ -263,46 +285,38 @@ class Database:
         Args:
             sender: Người gửi
             content: Nội dung tin nhắn
-            receiver: Người nhận (None cho tin nhắn công khai)
-            message_type: Loại tin nhắn ('public' hoặc 'private')
+            receiver: Người nhận (Username cho private, GroupID cho group, None cho public)
+            message_type: Loại tin nhắn ('public', 'private', hoặc 'group')
         """
         cursor = self.conn.cursor()
         cursor.execute(
             "INSERT INTO messages (sender, receiver, content, message_type) VALUES (?, ?, ?, ?)",
-            (sender, receiver, content, message_type)
+            (sender, str(receiver) if receiver is not None else None, content, message_type)
         )
         self.conn.commit()
 
-    def get_history(self, limit=50, message_type='public', username=None):
+    def get_history(self, limit=50, message_type='public', username=None, group_id=None):
         """
         Lấy lịch sử tin nhắn
         
         Args:
             limit: Số lượng tin nhắn tối đa
-            message_type: Loại tin nhắn ('public', 'private', hoặc None cho tất cả)
+            message_type: Loại tin nhắn ('public', 'private', 'group', hoặc None cho tất cả)
             username: Nếu được chỉ định, chỉ lấy tin nhắn liên quan đến user này
+            group_id: Nếu được chỉ định, chỉ lấy tin nhắn của nhóm này
             
         Returns:
-            List các tuple (sender, receiver, content, timestamp, message_type)
+            List các Rows
         """
         cursor = self.conn.cursor()
         
         if message_type == 'public':
-            if username:
-                # Lấy tin nhắn công khai và tin nhắn riêng của user
-                cursor.execute('''
-                    SELECT sender, receiver, content, timestamp, message_type 
-                    FROM messages 
-                    WHERE (message_type = 'public' OR (message_type = 'private' AND (sender = ? OR receiver = ?)))
-                    ORDER BY id DESC LIMIT ?
-                ''', (username, username, limit))
-            else:
-                cursor.execute('''
-                    SELECT sender, receiver, content, timestamp, message_type 
-                    FROM messages 
-                    WHERE message_type = 'public'
-                    ORDER BY id DESC LIMIT ?
-                ''', (limit,))
+            cursor.execute('''
+                SELECT sender, receiver, content, timestamp, message_type 
+                FROM messages 
+                WHERE message_type = 'public'
+                ORDER BY id DESC LIMIT ?
+            ''', (limit,))
         elif message_type == 'private' and username:
             # Lấy tin nhắn riêng của user
             cursor.execute('''
@@ -311,17 +325,107 @@ class Database:
                 WHERE message_type = 'private' AND (sender = ? OR receiver = ?)
                 ORDER BY id DESC LIMIT ?
             ''', (username, username, limit))
-        else:
-            # Lấy tất cả tin nhắn
+        elif message_type == 'group' and group_id:
+            # Lấy tin nhắn của nhóm
             cursor.execute('''
                 SELECT sender, receiver, content, timestamp, message_type 
                 FROM messages 
+                WHERE message_type = 'group' AND receiver = ?
                 ORDER BY id DESC LIMIT ?
-            ''', (limit,))
+            ''', (str(group_id), limit))
+        else:
+            # Lấy tất cả tin nhắn liên quan đến user
+            if username:
+                cursor.execute('''
+                    SELECT sender, receiver, content, timestamp, message_type 
+                    FROM messages 
+                    WHERE message_type = 'public' 
+                       OR (message_type = 'private' AND (sender = ? OR receiver = ?))
+                       OR (message_type = 'group' AND receiver IN (SELECT group_id FROM group_members WHERE username = ?))
+                    ORDER BY id DESC LIMIT ?
+                ''', (username, username, username, limit))
+            else:
+                cursor.execute('''
+                    SELECT sender, receiver, content, timestamp, message_type 
+                    FROM messages 
+                    ORDER BY id DESC LIMIT ?
+                ''', (limit,))
         
         rows = cursor.fetchall()
         # Reverse để hiển thị tin nhắn cũ nhất trước
         return rows[::-1]
+
+    def create_group(self, name, creator):
+        """Tạo nhóm mới và thêm creator làm thành viên đầu tiên"""
+        cursor = self.conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO groups (name, creator) VALUES (?, ?)",
+                (name, creator)
+            )
+            group_id = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO group_members (group_id, username) VALUES (?, ?)",
+                (group_id, creator)
+            )
+            self.conn.commit()
+            return group_id
+        except Exception as e:
+            print(f"[DB ERROR] create_group failed: {e}")
+            return None
+
+    def add_member_to_group(self, group_id, username):
+        """Thêm thành viên vào nhóm"""
+        cursor = self.conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT OR IGNORE INTO group_members (group_id, username) VALUES (?, ?)",
+                (group_id, username)
+            )
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB ERROR] add_member_to_group failed: {e}")
+            return False
+
+    def remove_member_from_group(self, group_id, username):
+        """Xóa thành viên khỏi nhóm"""
+        cursor = self.conn.cursor()
+        try:
+            cursor.execute(
+                "DELETE FROM group_members WHERE group_id = ? AND username = ?",
+                (group_id, username)
+            )
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB ERROR] remove_member_from_group failed: {e}")
+            return False
+
+    def get_user_groups(self, username):
+        """Lấy danh sách các nhóm mà user tham gia"""
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            SELECT g.id, g.name, g.creator, g.created_at
+            FROM groups g
+            JOIN group_members gm ON g.id = gm.group_id
+            WHERE gm.username = ?
+        ''', (username,))
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_all_groups(self):
+        """Lấy danh sách tất cả các nhóm"""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, name, creator, created_at FROM groups")
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_group_members(self, group_id):
+        """Lấy danh sách thành viên của nhóm"""
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            SELECT username FROM group_members WHERE group_id = ?
+        ''', (group_id,))
+        return [row['username'] for row in cursor.fetchall()]
 
     def get_user_info(self, username):
         """

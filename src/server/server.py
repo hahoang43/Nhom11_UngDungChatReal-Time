@@ -215,6 +215,10 @@ class ChatServer:
                         'type': protocol.MSG_TEXT, 
                         'payload': f"Server: {username} has joined the chat."
                     })
+                    
+                    # Broadcast updated users list
+                    self.broadcast_users_list()
+                    self.broadcast_groups_list()
             else:
                 print(f"[ERROR] Invalid login attempt from {client_type}.")
                 client_socket.close()
@@ -246,18 +250,80 @@ class ChatServer:
                 
                 if message.get('type') == protocol.MSG_TEXT:
                     content = message.get('payload')
-                    
                     print(f"[{username}] {content}")
-                    
-                    # Save to DB (public message) - lưu plaintext
                     self.db.save_message(username, content, message_type='public')
-
-                    # Broadcast to others
                     self.broadcast({
                         'type': protocol.MSG_TEXT, 
                         'payload': f"{username}: {content}"
                     }, exclude_socket=client_socket)
                 
+                elif message.get('type') == protocol.MSG_PRIVATE:
+                    payload = message.get('payload', {})
+                    receiver = payload.get('receiver')
+                    content = payload.get('content')
+                    
+                    print(f"[PRIVATE] {username} to {receiver}: {content}")
+                    self.db.save_message(username, content, receiver=receiver, message_type='private')
+                    
+                    target_msg = {
+                        'type': protocol.MSG_PRIVATE,
+                        'payload': {'sender': username, 'content': content}
+                    }
+                    
+                    # Find receiver socket
+                    target_socket = self._get_socket_by_username(receiver)
+                    if target_socket:
+                        self._send_to_client(target_socket, target_msg)
+                    else:
+                        error_msg = {'type': 'ERROR', 'payload': f"User {receiver} is offline."}
+                        self._send_to_client(client_socket, error_msg)
+
+                elif message.get('type') == protocol.MSG_GROUP:
+                    payload = message.get('payload', {})
+                    group_id = payload.get('group_id')
+                    content = payload.get('content')
+                    
+                    print(f"[GROUP {group_id}] {username}: {content}")
+                    self.db.save_message(username, content, receiver=group_id, message_type='group')
+                    
+                    group_msg = {
+                        'type': protocol.MSG_GROUP,
+                        'payload': {'sender': username, 'group_id': group_id, 'content': content}
+                    }
+                    self.broadcast_to_group(group_id, group_msg, exclude_socket=client_socket)
+
+                elif message.get('type') == protocol.MSG_GROUP_CREATE:
+                    group_name = message.get('payload')
+                    group_id = self.db.create_group(group_name, username)
+                    if group_id:
+                        self._send_to_client(client_socket, {
+                            'type': 'SUCCESS', 
+                            'payload': f"Group '{group_name}' created with ID {group_id}"
+                        })
+                        self.broadcast_groups_list()
+                    else:
+                        self._send_to_client(client_socket, {'type': 'ERROR', 'payload': "Failed to create group"})
+
+                elif message.get('type') == protocol.MSG_GROUP_JOIN:
+                    group_id = message.get('payload')
+                    if self.db.add_member_to_group(group_id, username):
+                        self._send_to_client(client_socket, {
+                            'type': 'SUCCESS', 
+                            'payload': f"Joined group {group_id}"
+                        })
+                    else:
+                        self._send_to_client(client_socket, {'type': 'ERROR', 'payload': "Failed to join group"})
+
+                elif message.get('type') == protocol.MSG_GROUP_LEAVE:
+                    group_id = message.get('payload')
+                    if self.db.remove_member_from_group(group_id, username):
+                        self._send_to_client(client_socket, {
+                            'type': 'SUCCESS', 
+                            'payload': f"Left group {group_id}"
+                        })
+                    else:
+                        self._send_to_client(client_socket, {'type': 'ERROR', 'payload': "Failed to leave group"})
+
                 elif message.get('type') == protocol.MSG_FILE_REQUEST:
                     # Xử lý file request
                     file_info = message.get('payload', {})
@@ -338,6 +404,51 @@ class ChatServer:
                     'type': protocol.MSG_TEXT, 
                     'payload': f"Server: {username} has left the chat."
                 })
+                self.broadcast_users_list()
+
+    def _send_to_client(self, client_socket, message_dict):
+        """Helper to send a message to a specific client"""
+        c_type = self.client_types.get(client_socket, 'tcp')
+        try:
+            if c_type == 'tcp':
+                protocol.send_json(client_socket, message_dict)
+            else:
+                websocket_handler.send_frame(client_socket, json.dumps(message_dict))
+        except:
+            pass
+
+    def _get_socket_by_username(self, username):
+        """Finds the socket associated with a username"""
+        with self.lock:
+            for sock, name in self.clients.items():
+                if name == username:
+                    return sock
+        return None
+
+    def broadcast_users_list(self):
+        """Broadcasts the list of online users to everyone"""
+        with self.lock:
+            online_users = list(set(self.clients.values()))
+        self.broadcast({
+            'type': protocol.MSG_USERS_LIST,
+            'payload': online_users
+        })
+
+    def broadcast_groups_list(self):
+        """Broadcasts the list of all groups to everyone"""
+        groups = self.db.get_all_groups()
+        self.broadcast({
+            'type': protocol.MSG_GROUPS_LIST,
+            'payload': groups
+        })
+
+    def broadcast_to_group(self, group_id, message_dict, exclude_socket=None):
+        """Broadcasts a message to all members of a group who are currently online"""
+        members = self.db.get_group_members(group_id)
+        with self.lock:
+            for sock, name in self.clients.items():
+                if name in members and sock != exclude_socket:
+                    self._send_to_client(sock, message_dict)
 
     def broadcast(self, message_dict, exclude_socket=None):
         """Sends a message to all connected clients (TCP and WS)"""

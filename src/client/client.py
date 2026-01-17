@@ -18,10 +18,14 @@ class ChatClient:
         self.running = False
         self.on_message_received = None # Callback function
         self.on_login_response = None # Callback for login/register response
+        self.on_users_list_received = None # Callback for user list
+        self.on_groups_list_received = None # Callback for group list
+        self.on_server_response = None # Callback for SUCCESS/ERROR messages
         self.waiting_for_login = False
 
     def connect(self, username, password='default'):
         """Connects to the server and performs login"""
+        # ... (rest of connect remains same)
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((self.host, self.port))
@@ -73,7 +77,7 @@ class ChatClient:
             return False
 
     def send_message(self, message):
-        """Sends a text message to the server"""
+        """Sends a public text message to the server"""
         if self.socket and self.running:
             msg_data = {'type': protocol.MSG_TEXT, 'payload': message}
             try:
@@ -81,6 +85,63 @@ class ChatClient:
             except Exception as e:
                 print(f"[CLIENT ERROR] Send failed: {e}")
                 self.disconnect()
+
+    def send_private(self, receiver, message):
+        """Sends a private message to a specific user"""
+        if self.socket and self.running:
+            msg_data = {
+                'type': protocol.MSG_PRIVATE,
+                'payload': {'receiver': receiver, 'content': message}
+            }
+            try:
+                protocol.send_json(self.socket, msg_data)
+            except Exception as e:
+                print(f"[CLIENT ERROR] Private send failed: {e}")
+
+    def send_group(self, group_id, message):
+        """Sends a message to a group"""
+        if self.socket and self.running:
+            msg_data = {
+                'type': protocol.MSG_GROUP,
+                'payload': {'group_id': group_id, 'content': message}
+            }
+            try:
+                protocol.send_json(self.socket, msg_data)
+            except Exception as e:
+                print(f"[CLIENT ERROR] Group send failed: {e}")
+
+    def create_group(self, group_name):
+        """Request to create a group"""
+        if self.socket and self.running:
+            try:
+                protocol.send_json(self.socket, {
+                    'type': protocol.MSG_GROUP_CREATE, 
+                    'payload': group_name
+                })
+            except Exception as e:
+                print(f"[CLIENT ERROR] Create group failed: {e}")
+
+    def join_group(self, group_id):
+        """Request to join a group"""
+        if self.socket and self.running:
+            try:
+                protocol.send_json(self.socket, {
+                    'type': protocol.MSG_GROUP_JOIN, 
+                    'payload': group_id
+                })
+            except Exception as e:
+                print(f"[CLIENT ERROR] Join group failed: {e}")
+
+    def leave_group(self, group_id):
+        """Request to leave a group"""
+        if self.socket and self.running:
+            try:
+                protocol.send_json(self.socket, {
+                    'type': protocol.MSG_GROUP_LEAVE, 
+                    'payload': group_id
+                })
+            except Exception as e:
+                print(f"[CLIENT ERROR] Leave group failed: {e}")
 
     def receive_loop(self):
         """Background thread to receive messages"""
@@ -91,38 +152,51 @@ class ChatClient:
                     break
                 
                 msg_type = message.get('type')
+                payload = message.get('payload')
                 
                 # Handle login/register responses
                 if self.waiting_for_login:
                     if msg_type == 'LOGIN_SUCCESS':
                         self.waiting_for_login = False
                         if self.on_login_response:
-                            self.on_login_response(True, message.get('payload', 'Đăng nhập thành công!'))
+                            self.on_login_response(True, payload)
                     elif msg_type == 'ERROR':
                         self.waiting_for_login = False
-                        error_msg = message.get('payload', 'Đăng nhập thất bại!')
                         if self.on_login_response:
-                            self.on_login_response(False, error_msg)
+                            self.on_login_response(False, payload)
                         self.disconnect()
                     elif msg_type == protocol.MSG_TEXT:
-                        # Server might send history or welcome messages
-                        content = message.get('payload')
                         if self.on_message_received:
-                            self.on_message_received(content)
+                            self.on_message_received(payload)
                 else:
                     # Normal message handling
                     if msg_type == protocol.MSG_TEXT:
-                        content = message.get('payload')
                         if self.on_message_received:
-                            self.on_message_received(content)
+                            self.on_message_received(payload)
+                    elif msg_type == protocol.MSG_PRIVATE:
+                        sender = payload.get('sender')
+                        content = payload.get('content')
+                        if self.on_message_received:
+                            self.on_message_received(f"[Private] {sender}: {content}", msg_type, sender)
+                    elif msg_type == protocol.MSG_GROUP:
+                        sender = payload.get('sender')
+                        group_id = payload.get('group_id')
+                        content = payload.get('content')
+                        if self.on_message_received:
+                            self.on_message_received(f"[Group {group_id}] {sender}: {content}", msg_type, group_id)
+                    elif msg_type == protocol.MSG_USERS_LIST:
+                        if self.on_users_list_received:
+                            self.on_users_list_received(payload)
+                    elif msg_type == protocol.MSG_GROUPS_LIST:
+                        if self.on_groups_list_received:
+                            self.on_groups_list_received(payload)
+                    elif msg_type in ['SUCCESS', 'ERROR']:
+                        if self.on_server_response:
+                            self.on_server_response(msg_type, payload)
             except Exception as e:
                 print(f"[CLIENT ERROR] Receive error: {e}")
-                if self.waiting_for_login and self.on_login_response:
-                    self.on_login_response(False, f"Lỗi kết nối: {e}")
                 break
         
-        if self.waiting_for_login:
-            self.waiting_for_login = False
         self.disconnect()
 
     def disconnect(self):
@@ -130,7 +204,6 @@ class ChatClient:
         self.running = False
         if self.socket:
             try:
-                # Send exit message
                 protocol.send_json(self.socket, {'type': protocol.MSG_EXIT, 'payload': ''})
             except:
                 pass

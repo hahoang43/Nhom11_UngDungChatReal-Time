@@ -23,802 +23,425 @@
             padding: 20px;
         }
 
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            text-align: center;
+            z-index: 100;
+        }
+
         .chat-container {
             width: 100%;
-            max-width: 450px;
+            max-width: 1000px;
+            height: 700px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
-            animation: slideUp 0.5s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            display: none;
         }
 
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .status-indicator {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #ff4757;
-            border: 2px solid white;
-            animation: pulse 2s infinite;
-        }
-
-        .status-indicator.connected {
-            background: #2ed573;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-
-        .login-area, .chat-area {
-            padding: 30px;
-        }
-
-        .login-area {
-            text-align: center;
-        }
-
-        .login-title {
-            font-size: 20px;
-            color: #2c3e50;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .login-subtitle {
-            color: #7f8c8d;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .tab-buttons {
+            padding: 15px 25px;
             display: flex;
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 4px;
-            margin-bottom: 30px;
-            position: relative;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .tab-btn {
+        .main-content {
+            display: flex;
             flex: 1;
-            padding: 12px 20px;
-            border: none;
-            background: transparent;
-            color: #7f8c8d;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
+            overflow: hidden;
         }
 
-        .tab-btn.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-        }
-
-        .auth-form {
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        .input-group i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #bdc3c7;
-            font-size: 16px;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 15px 15px 15px 45px;
-            border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s ease;
+        .sidebar {
+            width: 280px;
             background: #f8f9fa;
+            border-right: 1px solid #ecf0f1;
+            display: flex;
+            flex-direction: column;
         }
 
-        .input-field:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        .sidebar-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
         }
 
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #7f8c8d;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            padding: 10px 15px;
+            letter-spacing: 1px;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        .list-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
         }
 
-        .btn:active {
-            transform: translateY(0);
+        .list-item:hover {
+            transform: translateX(5px);
+            background: #f1f3f5;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .list-item.active {
+            background: #667eea;
             color: white;
-            width: 100%;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
-        .btn-send {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            margin-left: 10px;
-            flex-shrink: 0;
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .chat-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid #eee;
+            background: white;
         }
 
         .messages-container {
-            height: 350px;
+            flex: 1;
             overflow-y: auto;
+            padding: 25px;
             background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #ecf0f1;
+            display: flex;
+            flex-direction: column;
         }
 
         .message {
-            margin-bottom: 15px;
-            padding: 12px 16px;
+            margin-bottom: 12px;
+            padding: 12px 18px;
             border-radius: 18px;
-            max-width: 80%;
-            word-wrap: break-word;
-            animation: fadeIn 0.3s ease-in;
+            max-width: 75%;
+            font-size: 14px;
+            line-height: 1.4;
             position: relative;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .message.sent {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             margin-left: auto;
-            border-bottom-right-radius: 4px;
+            border-bottom-right-radius: 2px;
         }
 
         .message.received {
             background: white;
             color: #2c3e50;
-            border-bottom-left-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         .message.system {
-            background: #ffeaa7;
-            color: #d63031;
+            background: #e9ecef;
+            color: #495057;
             text-align: center;
-            max-width: 100%;
-            font-weight: 500;
-        }
-
-        .message.private {
-            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
-            color: white;
-            border: 2px solid #fdcb6e;
-        }
-
-        .message-time {
-            font-size: 11px;
-            opacity: 0.7;
-            margin-top: 4px;
-        }
-
-        .input-area {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .message-input {
-            flex: 1;
-            padding: 15px 20px;
-            border: 2px solid #ecf0f1;
-            border-radius: 25px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        .message-input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .typing-indicator {
-            display: none;
-            font-style: italic;
-            color: #7f8c8d;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        .user-count {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 5px 10px;
-            border-radius: 15px;
+            max-width: 90%;
+            margin: 10px auto;
             font-size: 12px;
-            font-weight: 500;
+            border-radius: 20px;
         }
 
-        .error-message {
-            background: #ff7675;
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
             color: white;
-            padding: 10px 15px;
-            border-radius: 8px;
+            width: 100%;
+        }
+
+        .btn-green {
+            background: #2ed573;
+            color: white;
+            margin: 15px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: #f1f3f5;
+            padding: 5px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #adb5bd;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #f1f3f5;
             margin-bottom: 15px;
-            font-size: 14px;
-            display: none;
+            outline: none;
+            transition: all 0.3s;
         }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
+        .input-field:focus {
+            border-color: #667eea;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-            .chat-container {
-                margin: 10px;
-                max-width: none;
-            }
-
-            .login-area, .chat-area {
-                padding: 20px;
-            }
-
-            .messages-container {
-                height: 300px;
-            }
-        }
-
-        /* Scrollbar styling */
-        .messages-container::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .messages-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 3px;
-        }
-
-        .messages-container::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 3px;
-        }
-
-        .messages-container::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 
 <body>
-    <div class="chat-container">
+    <!-- Auth Section -->
+    <div id="authPanel" class="auth-container">
+        <h2 style="margin-bottom: 10px; color: #2c3e50;">Chào mừng bạn!</h2>
+        <p style="color: #7f8c8d; margin-bottom: 25px; font-size: 14px;">Vui lòng đăng nhập hoặc đăng ký</p>
+
+        <div class="tab-buttons">
+            <button id="tabLogin" class="tab-btn active" onclick="switchAuth('login')">Đăng Nhập</button>
+            <button id="tabRegister" class="tab-btn" onclick="switchAuth('register')">Đăng Ký</button>
+        </div>
+
+        <div id="loginForm">
+            <input type="text" id="loginUser" class="input-field" placeholder="Tên đăng nhập">
+            <input type="password" id="loginPass" class="input-field" placeholder="Mật khẩu">
+            <button onclick="handleAuth('LOGIN')" class="btn btn-primary">Đăng Nhập</button>
+        </div>
+
+        <div id="registerForm" class="hidden">
+            <input type="text" id="regUser" class="input-field" placeholder="Tên đăng nhập">
+            <input type="password" id="regPass" class="input-field" placeholder="Mật khẩu">
+            <input type="password" id="regConfirm" class="input-field" placeholder="Xác nhận mật khẩu">
+            <button onclick="handleAuth('REGISTER')" class="btn btn-primary">Đăng Ký</button>
+        </div>
+
+        <p id="authError" style="color: #ff4757; margin-top: 15px; font-size: 13px;"></p>
+    </div>
+
+    <!-- Chat Section -->
+    <div id="chatPanel" class="chat-container">
         <div class="header">
-            <div class="user-count" id="userCount">
-                <i class="fas fa-users"></i> 0 online
-            </div>
-            <div class="status-indicator" id="statusIndicator"></div>
-            <h1><i class="fas fa-comments"></i> Chat Real-Time</h1>
-            <p>Nhóm 11 - UT EDU</p>
+            <h1 style="font-size: 18px;">💬 Chat Real-Time | Nhóm 11</h1>
+            <div id="currentUserDisplay" style="font-weight: 500;"></div>
         </div>
 
-        <div id="loginArea" class="login-area">
-            <div class="error-message" id="errorMessage"></div>
-            <h2 class="login-title">Chào mừng!</h2>
-            <p class="login-subtitle">Đăng ký tài khoản mới hoặc đăng nhập</p>
-
-            <!-- Tab buttons -->
-            <div class="tab-buttons">
-                <button id="loginTab" class="tab-btn active">Đăng Nhập</button>
-                <button id="registerTab" class="tab-btn">Đăng Ký</button>
+        <div class="main-content">
+            <div class="sidebar">
+                <button onclick="createNewGroup()" class="btn btn-green">➕ Tạo nhóm mới</button>
+                <div class="sidebar-title">👥 Danh sách Nhóm</div>
+                <div id="groupsList" class="sidebar-section"></div>
+                <div class="sidebar-title">👥 Người dùng Online</div>
+                <div id="usersList" class="sidebar-section"></div>
             </div>
 
-            <!-- Login Form -->
-            <div id="loginForm" class="auth-form">
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="loginUsername" class="input-field" placeholder="Tên đăng nhập" maxlength="20">
+            <div class="chat-main">
+                <div class="chat-header">
+                    <h2 id="targetName" style="font-size: 16px; color: #495057;">🌐 Chat Công Khai</h2>
                 </div>
-
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="loginPassword" class="input-field" placeholder="Mật khẩu" maxlength="50">
+                <div id="messages" class="messages-container"></div>
+                <div class="header" style="background: white; border-top: 1px solid #eee; padding: 15px;">
+                    <input type="text" id="chatInput" class="input-field" style="margin-bottom: 0; border-radius: 25px;"
+                        placeholder="Nhập tin nhắn...">
+                    <button id="sendBtn" class="btn btn-primary"
+                        style="width: 80px; margin-left: 10px; border-radius: 25px;">Gửi</button>
                 </div>
-
-                <button id="loginBtn" class="btn btn-primary">
-                    <span id="loginText">Đăng Nhập</span>
-                    <span class="loading" id="loginLoading" style="display: none;"></span>
-                </button>
-            </div>
-
-            <!-- Register Form -->
-            <div id="registerForm" class="auth-form" style="display: none;">
-                <div class="input-group">
-                    <i class="fas fa-user-plus"></i>
-                    <input type="text" id="registerUsername" class="input-field" placeholder="Tên đăng nhập" maxlength="20">
-                </div>
-
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="registerPassword" class="input-field" placeholder="Mật khẩu" maxlength="50">
-                </div>
-
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="registerConfirmPassword" class="input-field" placeholder="Xác nhận mật khẩu" maxlength="50">
-                </div>
-
-                <button id="registerBtn" class="btn btn-primary">
-                    <span id="registerText">Đăng Ký</span>
-                    <span class="loading" id="registerLoading" style="display: none;"></span>
-                </button>
-            </div>
-        </div>
-
-        <div id="chatArea" class="chat-area" style="display: none;">
-            <div class="messages-container" id="messages"></div>
-
-            <div class="typing-indicator" id="typingIndicator">
-                <i class="fas fa-circle-notch fa-spin"></i> Đang nhập...
-            </div>
-
-            <div class="input-area">
-                <input type="text" id="messageInput" class="message-input" placeholder="Nhập tin nhắn..." maxlength="500">
-                <button id="sendBtn" class="btn btn-send">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
             </div>
         </div>
     </div>
 
     <script>
         let ws = null;
-        let username = "";
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
+        let myName = "";
+        let currentTarget = "Public:Public";
 
-        const elements = {
-            loginArea: document.getElementById('loginArea'),
-            chatArea: document.getElementById('chatArea'),
-            // Login form
-            loginUsername: document.getElementById('loginUsername'),
-            loginPassword: document.getElementById('loginPassword'),
-            loginBtn: document.getElementById('loginBtn'),
-            loginText: document.getElementById('loginText'),
-            loginLoading: document.getElementById('loginLoading'),
-            // Register form
-            registerUsername: document.getElementById('registerUsername'),
-            registerPassword: document.getElementById('registerPassword'),
-            registerConfirmPassword: document.getElementById('registerConfirmPassword'),
-            registerBtn: document.getElementById('registerBtn'),
-            registerText: document.getElementById('registerText'),
-            registerLoading: document.getElementById('registerLoading'),
-            // Tabs
-            loginTab: document.getElementById('loginTab'),
-            registerTab: document.getElementById('registerTab'),
-            loginForm: document.getElementById('loginForm'),
-            registerForm: document.getElementById('registerForm'),
-            // Other
-            messages: document.getElementById('messages'),
-            messageInput: document.getElementById('messageInput'),
-            sendBtn: document.getElementById('sendBtn'),
-            statusIndicator: document.getElementById('statusIndicator'),
-            errorMessage: document.getElementById('errorMessage'),
-            typingIndicator: document.getElementById('typingIndicator'),
-            userCount: document.getElementById('userCount')
-        };
-
-        function showError(message) {
-            elements.errorMessage.textContent = message;
-            elements.errorMessage.style.display = 'block';
-            setTimeout(() => {
-                elements.errorMessage.style.display = 'none';
-            }, 5000);
+        function switchAuth(mode) {
+            document.getElementById('loginForm').classList.toggle('hidden', mode === 'register');
+            document.getElementById('registerForm').classList.toggle('hidden', mode === 'login');
+            document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
+            document.getElementById('tabRegister').classList.toggle('active', mode === 'register');
+            document.getElementById('authError').textContent = "";
         }
 
-        function updateConnectionStatus(connected) {
-            elements.statusIndicator.classList.toggle('connected', connected);
-            if (connected) {
-                elements.statusIndicator.title = 'Đã kết nối';
+        function handleAuth(type) {
+            const user = (type === 'LOGIN' ? document.getElementById('loginUser') : document.getElementById('regUser')).value.trim();
+            const pass = (type === 'LOGIN' ? document.getElementById('loginPass') : document.getElementById('regPass')).value.trim();
+
+            if (type === 'REGISTER') {
+                const conf = document.getElementById('regConfirm').value.trim();
+                if (pass !== conf) { alert("Mật khẩu không khớp!"); return; }
+            }
+
+            if (!user || !pass) { alert("Vui lòng nhập đầy đủ!"); return; }
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                const host = window.location.hostname || 'localhost';
+                ws = new WebSocket('ws://' + host + ':5555');
+                ws.onopen = () => sendAuth(type, user, pass);
+                ws.onmessage = handleMessage;
+                ws.onerror = (err) => {
+                    console.error("WebSocket Error:", err);
+                    document.getElementById('authError').textContent = "Không thể kết nối đến server (Hãy chắc chắn server đã chạy)";
+                };
+                ws.onclose = () => {
+                    console.log("WebSocket Closed");
+                    // Only alert if we were previously logged in or if it's a persistent failure
+                    if (document.getElementById('chatPanel').style.display === 'flex') {
+                        alert("Mất kết nối với server!");
+                        location.reload();
+                    }
+                };
             } else {
-                elements.statusIndicator.title = 'Mất kết nối';
+                sendAuth(type, user, pass);
             }
         }
 
-        function appendMessage(content, type = 'received', isSystem = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-
-            if (isSystem) {
-                messageDiv.classList.add('system');
-            }
-
-            if (content.includes('[PRIVATE]') || content.includes('[Bạn ->') || content.includes('-> Bạn]')) {
-                messageDiv.classList.add('private');
-            }
-
-            messageDiv.innerHTML = content;
-            elements.messages.appendChild(messageDiv);
-            elements.messages.scrollTop = elements.messages.scrollHeight;
+        function sendAuth(type, username, password) {
+            ws.send(JSON.stringify({ type: type, payload: { username, password } }));
+            myName = username;
         }
 
-        function connectWebSocket(action = 'login', username = '', password = '') {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                return;
-            }
+        function handleMessage(event) {
+            const data = JSON.parse(event.data);
+            console.log("Receive:", data);
 
-            try {
-                ws = new WebSocket('ws://localhost:5555');
-
-                ws.onopen = function() {
-                    console.log('WebSocket connected');
-                    updateConnectionStatus(true);
-                    reconnectAttempts = 0;
-
-                    // Send login or register message
-                    const messageType = action === 'register' ? 'REGISTER' : 'LOGIN';
-                    ws.send(JSON.stringify({
-                        type: messageType,
-                        payload: { username: username, password: password }
-                    }));
-                };
-
-                ws.onmessage = function(event) {
-                    try {
-                        const data = JSON.parse(event.data);
-
-                        switch(data.type) {
-                            case 'LOGIN_SUCCESS':
-                                elements.loginArea.style.display = 'none';
-                                elements.chatArea.style.display = 'block';
-                                appendMessage(`🎉 ${data.payload}`, 'system', true);
-                                break;
-
-                            case 'ERROR':
-                                showError(data.payload);
-                                // Reset loading states
-                                resetLoadingStates();
-                                break;
-
-                            case 'TEXT':
-                                if (data.payload.includes('has joined') || data.payload.includes('has left')) {
-                                    appendMessage(data.payload, 'system', true);
-                                } else {
-                                    appendMessage(data.payload, 'received');
-                                }
-                                break;
-
-                            case 'PRIVATE':
-                                const privateMsg = `[PRIVATE] ${data.payload.sender}: ${data.payload.content}`;
-                                appendMessage(privateMsg, 'private', false);
-                                break;
-
-                            default:
-                                appendMessage(event.data, 'received');
-                        }
-                    } catch (e) {
-                        // Fallback for non-JSON messages
-                        appendMessage(event.data, 'received');
-                    }
-                };
-
-                ws.onclose = function() {
-                    console.log('WebSocket disconnected');
-                    updateConnectionStatus(false);
-                    appendMessage('<i class="fas fa-exclamation-triangle"></i> Mất kết nối với server', 'system', true);
-
-                    // Auto reconnect
-                    if (reconnectAttempts < maxReconnectAttempts) {
-                        reconnectAttempts++;
-                        setTimeout(() => {
-                            console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})`);
-                            connectWebSocket();
-                        }, 2000 * reconnectAttempts);
-                    }
-                };
-
-                ws.onerror = function(error) {
-                    console.error('WebSocket error:', error);
-                    showError('Lỗi kết nối WebSocket');
-                    resetLoadingStates();
-                };
-
-            } catch (error) {
-                console.error('Failed to create WebSocket:', error);
-                showError('Không thể kết nối đến server');
-                resetLoadingStates();
+            switch (data.type) {
+                case 'LOGIN_SUCCESS':
+                    document.getElementById('authPanel').classList.add('hidden');
+                    document.getElementById('chatPanel').style.display = 'flex';
+                    document.getElementById('currentUserDisplay').textContent = `👤 ${myName}`;
+                    appendMsg("Chào mừng bạn đã tham gia!", 'system');
+                    break;
+                case 'ERROR':
+                    document.getElementById('authError').textContent = data.payload;
+                    break;
+                case 'TEXT':
+                    appendMsg(data.payload);
+                    break;
+                case 'PRIVATE':
+                    appendMsg(`[Riêng từ ${data.payload.sender}]: ${data.payload.content}`, 'received');
+                    break;
+                case 'GROUP':
+                    appendMsg(`[Nhóm ${data.payload.group_id}] ${data.payload.sender}: ${data.payload.content}`, 'received');
+                    break;
+                case 'USERS_LIST':
+                    const ulist = document.getElementById('usersList');
+                    ulist.innerHTML = '';
+                    data.payload.forEach(u => {
+                        if (u === myName) return;
+                        const div = createListItem(u, 'User', '👤');
+                        div.onclick = () => setTarget(u, u, 'User');
+                        ulist.appendChild(div);
+                    });
+                    break;
+                case 'GROUPS_LIST':
+                    const glist = document.getElementById('groupsList');
+                    glist.innerHTML = '';
+                    data.payload.forEach(g => {
+                        const div = createListItem(g.name, 'Group', '👥', g.id);
+                        div.onclick = () => setTarget(g.id, g.name, 'Group');
+                        glist.appendChild(div);
+                    });
+                    break;
             }
         }
 
-        function resetLoadingStates() {
-            elements.loginLoading.style.display = 'none';
-            elements.loginText.style.display = 'inline';
-            elements.loginBtn.disabled = false;
+        function createListItem(name, type, icon, id) {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.id = `item-${type}-${id || name}`;
+            div.innerHTML = `<span>${icon}</span> ${name}`;
+            return div;
+        }
 
-            elements.registerLoading.style.display = 'none';
-            elements.registerText.style.display = 'inline';
-            elements.registerBtn.disabled = false;
+        function setTarget(id, name, type) {
+            currentTarget = `${type}:${id}`;
+            document.getElementById('targetName').textContent = (type === 'Public' ? '🌐' : (type === 'User' ? '👤' : '👥')) + ' ' + name;
+
+            document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
+            const activeEl = document.getElementById(`item-${type}-${id}`);
+            if (activeEl) activeEl.classList.add('active');
+
+            appendMsg(`--- Đang chuyển sang: ${name} ---`, 'system');
+        }
+
+        function appendMsg(txt, type = 'received') {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = txt;
+            document.getElementById('messages').appendChild(div);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
         }
 
         function sendMessage() {
-            const message = elements.messageInput.value.trim();
-            if (!message || !ws || ws.readyState !== WebSocket.OPEN) {
-                return;
+            const input = document.getElementById('chatInput');
+            const txt = input.value.trim();
+            if (!txt || !ws) return;
+
+            if (currentTarget === 'Public:Public') {
+                ws.send(JSON.stringify({ type: 'TEXT', payload: txt }));
+                appendMsg(`Bạn: ${txt}`, 'sent');
+            } else if (currentTarget.startsWith('User:')) {
+                const target = currentTarget.split(':')[1];
+                ws.send(JSON.stringify({ type: 'PRIVATE', payload: { receiver: target, content: txt } }));
+                appendMsg(`[Gửi ${target}]: ${txt}`, 'sent');
+            } else if (currentTarget.startsWith('Group:')) {
+                const gid = currentTarget.split(':')[1];
+                ws.send(JSON.stringify({ type: 'GROUP', payload: { group_id: parseInt(gid), content: txt } }));
+                appendMsg(`[Gửi Nhóm]: ${txt}`, 'sent');
             }
-
-            // Send message
-            ws.send(JSON.stringify({
-                type: 'TEXT',
-                payload: message
-            }));
-
-            // Show sent message
-            appendMessage(`Bạn: ${message}`, 'sent');
-
-            // Clear input
-            elements.messageInput.value = '';
-            elements.messageInput.focus();
+            input.value = '';
         }
 
-        function login() {
-            const username = elements.loginUsername.value.trim();
-            const password = elements.loginPassword.value.trim();
-
-            if (!username || !password) {
-                showError('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!');
-                return;
-            }
-
-            // Show loading state
-            elements.loginText.style.display = 'none';
-            elements.loginLoading.style.display = 'inline-block';
-            elements.loginBtn.disabled = true;
-
-            // Store username globally
-            window.currentUsername = username;
-
-            // Connect WebSocket with login
-            connectWebSocket('login', username, password);
+        function createNewGroup() {
+            const name = prompt("Nhập tên nhóm mới:");
+            if (name) ws.send(JSON.stringify({ type: 'GROUP_CREATE', payload: { name: name } }));
         }
 
-        function register() {
-            const username = elements.registerUsername.value.trim();
-            const password = elements.registerPassword.value.trim();
-            const confirmPassword = elements.registerConfirmPassword.value.trim();
-
-            if (!username || !password || !confirmPassword) {
-                showError('Vui lòng nhập đầy đủ thông tin!');
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                showError('Mật khẩu xác nhận không khớp!');
-                return;
-            }
-
-            if (password.length < 6) {
-                showError('Mật khẩu phải có ít nhất 6 ký tự!');
-                return;
-            }
-
-            // Show loading state
-            elements.registerText.style.display = 'none';
-            elements.registerLoading.style.display = 'inline-block';
-            elements.registerBtn.disabled = true;
-
-            // Store username globally
-            window.currentUsername = username;
-
-            // Connect WebSocket with register
-            connectWebSocket('register', username, password);
-        }
-
-        function switchTab(tab) {
-            // Update tab buttons
-            elements.loginTab.classList.toggle('active', tab === 'login');
-            elements.registerTab.classList.toggle('active', tab === 'register');
-
-            // Update forms
-            elements.loginForm.style.display = tab === 'login' ? 'block' : 'none';
-            elements.registerForm.style.display = tab === 'register' ? 'block' : 'none';
-
-            // Clear error messages
-            elements.errorMessage.style.display = 'none';
-
-            // Reset loading states
-            resetLoadingStates();
-        }
-
-        // Event listeners
-        elements.loginTab.addEventListener('click', () => switchTab('login'));
-        elements.registerTab.addEventListener('click', () => switchTab('register'));
-
-        elements.loginBtn.addEventListener('click', login);
-        elements.loginUsername.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') login();
-        });
-        elements.loginPassword.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') login();
-        });
-
-        elements.registerBtn.addEventListener('click', register);
-        elements.registerUsername.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') register();
-        });
-        elements.registerPassword.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') register();
-        });
-        elements.registerConfirmPassword.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') register();
-        });
-
-        elements.sendBtn.addEventListener('click', sendMessage);
-        elements.messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        // Auto-focus first input
-        elements.loginUsername.focus();
-
-        // Update user count (mock)
-        setInterval(() => {
-            const onlineCount = Math.floor(Math.random() * 10) + 1;
-            elements.userCount.innerHTML = `<i class="fas fa-users"></i> ${onlineCount} online`;
-        }, 5000);
-
-        // Initial status
-        updateConnectionStatus(false);
-    </script>
-</body>
-
-</html>
-
-    </style>
-</head>
-
-<body>
-    <div id="chatbox">
-        
-        <div id="chatArea" style="display:none;">
-            <div id="messages"></div>
-            <input id="input" type="text" placeholder="Type a message..." />
-            <button id="send">Send</button>
-        </div>
-    </div>
-    <script>
-        let ws = null;
-        let username = "";
-
-        function appendMessage(msg) {
-            const messages = document.getElementById('messages');
-            messages.innerHTML += msg + '<br>';
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        document.getElementById('login').onclick = function () {
-            username = document.getElementById('username').value.trim();
-            if (!username) {
-                alert('Please enter your name!');
-                return;
-            }
-            ws = new WebSocket('ws://localhost:5555');
-            ws.onopen = function () {
-                // Send login message as JSON
-                ws.send(JSON.stringify({ type: 'LOGIN', payload: username }));
-                document.getElementById('loginArea').style.display = 'none';
-                document.getElementById('chatArea').style.display = '';
-            };
-            ws.onmessage = function (event) {
-                try {
-                    let data = JSON.parse(event.data);
-                    if (data.type === 'TEXT') {
-                        appendMessage(data.payload);
-                    }
-                } catch (e) {
-                    appendMessage(event.data);
-                }
-            };
-            ws.onclose = function () {
-                appendMessage('<span style="color:red">Disconnected from server.</span>');
-            };
-        };
-
-        document.getElementById('send').onclick = function () {
-            sendMsg();
-        };
-        document.getElementById('input').onkeydown = function (e) {
-            if (e.key === 'Enter') sendMsg();
-        };
-        function sendMsg() {
-            const input = document.getElementById('input');
-            const msg = input.value.trim();
-            if (msg && ws && ws.readyState === 1) {
-                ws.send(JSON.stringify({ type: 'TEXT', payload: msg }));
-                appendMessage('You: ' + msg);
-                input.value = '';
-            }
-        }
+        document.getElementById('sendBtn').onclick = sendMessage;
+        document.getElementById('chatInput').onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     </script>
 </body>
 
