@@ -617,6 +617,9 @@
                         Online
                     </div>
                 </div>
+                <button class="btn-icon-small" title="Đăng xuất" onclick="logout()" style="color: var(--danger);">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
             </div>
 
             <div class="section-title">
@@ -980,6 +983,14 @@
         }
 
         // --- Actions ---
+        function logout() {
+            if (confirm("Bạn có chắc muốn đăng xuất?")) {
+                localStorage.removeItem('chat_username');
+                localStorage.removeItem('chat_password');
+                location.reload();
+            }
+        }
+
         function createNewGroup() {
             const name = prompt("Nhập tên nhóm mới:");
             if (name) {
