@@ -71,6 +71,17 @@ def handle_message(data):
     msg_type = data.get('type')
     payload = data.get('payload')
 
+    if msg_type == protocol.MSG_REGISTER:
+        username = payload.get('username')
+        password = payload.get('password', 'default')
+        if db.user_exists(username):
+            emit('message', {'type': 'ERROR', 'payload': 'Tên đăng nhập đã tồn tại'})
+        elif db.register_user(username, password):
+            emit('message', {'type': 'LOGIN_SUCCESS', 'payload': f'Đăng ký thành công! Chào mừng {username}!'})
+        else:
+            emit('message', {'type': 'ERROR', 'payload': 'Đăng ký thất bại. Vui lòng thử lại.'})
+        return
+
     if msg_type == protocol.MSG_LOGIN:
         username = payload.get('username')
         password = payload.get('password', 'default')
