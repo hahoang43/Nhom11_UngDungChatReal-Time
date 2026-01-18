@@ -162,8 +162,8 @@ class ChatGUI:
         self.root.geometry("800x600")
         self.center_window()
         
-        self.current_target = "Public" # Can be "Public", "User:Name", or "Group:ID"
-        self.chat_histories = {"Public": []} # Store messages for each target locally if needed
+        self.current_target = None # No chat selected by default
+        self.chat_histories = {} # No public chat
         
         # Main PanedWindow
         self.paned = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, bg="#E0E0E0")
@@ -178,11 +178,7 @@ class ChatGUI:
         sb_header.pack(fill=tk.X)
         tk.Label(sb_header, text="Đang hoạt động", fg="white", bg="#2196F3", font=("Arial", 10, "bold")).pack(pady=15)
         
-        # Public Chat Button
-        self.public_btn = tk.Button(self.sidebar, text="🌐 Chat công khai", 
-                                   command=lambda: self.select_target("Public"),
-                                   relief=tk.FLAT, bg="#E3F2FD", anchor="w", padx=10, pady=10)
-        self.public_btn.pack(fill=tk.X)
+        # No public chat button
         
         # Online Users Section
         tk.Label(self.sidebar, text="NGƯỜI DÙNG", bg="#F5F5F5", font=("Arial", 8, "bold"), fg="#757575", pady=5, padx=10, anchor="w").pack(fill=tk.X)
@@ -209,7 +205,7 @@ class ChatGUI:
         self.chat_header.pack(fill=tk.X)
         self.chat_header.pack_propagate(False)
         
-        self.target_label = tk.Label(self.chat_header, text="🌐 Chat công khai", font=("Arial", 12, "bold"), bg="white")
+        self.target_label = tk.Label(self.chat_header, text="", font=("Arial", 12, "bold"), bg="white")
         self.target_label.pack(side=tk.LEFT, padx=15, pady=10)
         
         tk.Button(self.chat_header, text="Đăng Xuất", command=self.logout, 
@@ -242,17 +238,13 @@ class ChatGUI:
         """Switches current chat target"""
         self.current_target = target
         display_name = target
-        if target.startswith("User:"):
-            display_name = f"👤 {target[5:]}"
-            self.public_btn.config(bg="#FFFFFF")
-        elif target.startswith("Group:"):
-            # Find group name
-            group_id = target[6:]
-            display_name = f"👥 Nhóm {group_id}"
-            self.public_btn.config(bg="#FFFFFF")
-        else:
-            display_name = "🌐 Chat công khai"
-            self.public_btn.config(bg="#E3F2FD")
+            if target.startswith("User:"):
+                display_name = f"👤 {target[5:]}"
+            elif target.startswith("Group:"):
+                group_id = target[6:]
+                display_name = f"👥 Nhóm {group_id}"
+            else:
+                display_name = ""
             
         self.target_label.config(text=display_name)
         # In a real app, we would clear chat area and load history for this target
@@ -286,10 +278,43 @@ class ChatGUI:
     def update_groups_list(self, groups):
         self.root.after(0, self._update_groups_ui, groups)
 
+
     def _update_groups_ui(self, groups):
         self.groups_listbox.delete(0, tk.END)
+        self.group_id_to_creator = {}
         for g in groups:
-            self.groups_listbox.insert(tk.END, f"{g['id']}: {g['name']}")
+            display = f"{g['id']}: {g['name']}"
+            self.groups_listbox.insert(tk.END, display)
+            self.group_id_to_creator[str(g['id'])] = g['creator']
+
+        # Add delete button for group creator
+        if hasattr(self, 'delete_group_btn'):
+            self.delete_group_btn.destroy()
+        self.delete_group_btn = tk.Button(self.sidebar, text="🗑 Xóa nhóm", command=self.delete_selected_group,
+                                          relief=tk.FLAT, bg="#F44336", fg="white", font=("Arial", 9, "bold"))
+        self.delete_group_btn.pack(fill=tk.X, pady=5, padx=10)
+        self.delete_group_btn.pack_forget()  # Hide by default
+
+    def on_group_select(self, event):
+        selection = self.groups_listbox.curselection()
+        if selection:
+            group_str = self.groups_listbox.get(selection[0])
+            group_id = group_str.split(":")[0]
+            self.select_target(f"Group:{group_id}")
+            # Show delete button if user is creator
+            if hasattr(self, 'group_id_to_creator') and self.group_id_to_creator.get(group_id) == self.client.username:
+                self.delete_group_btn.pack(fill=tk.X, pady=5, padx=10)
+            else:
+                self.delete_group_btn.pack_forget()
+
+    def delete_selected_group(self):
+        selection = self.groups_listbox.curselection()
+        if not selection:
+            return
+        group_str = self.groups_listbox.get(selection[0])
+        group_id = group_str.split(":")[0]
+        if messagebox.askyesno("Xác nhận", f"Bạn có chắc chắn muốn xóa nhóm {group_id} không?"):
+            self.client.delete_group(group_id)
 
     def prompt_create_group(self):
         from tkinter import simpledialog
@@ -304,18 +329,16 @@ class ChatGUI:
         msg = self.msg_entry.get().strip()
         if not msg: return
         
-        if self.current_target == "Public":
-            self.client.send_message(msg)
-            self.display_message(f"You: {msg}", "user_msg")
-        elif self.current_target.startswith("User:"):
+        if self.current_target is None:
+            messagebox.showinfo("Chọn nhóm hoặc người dùng", "Vui lòng chọn nhóm hoặc người dùng để chat.")
+            return
+        if self.current_target.startswith("User:"):
             receiver = self.current_target[5:]
             self.client.send_private(receiver, msg)
             self.display_message(f"[To {receiver}] You: {msg}", "user_msg")
         elif self.current_target.startswith("Group:"):
             group_id = self.current_target[6:]
             self.client.send_group(group_id, msg)
-            # We don't display our own group message here as it will be broadcasted back 
-            # Or we can display it. Usually server broadcasts back to sender too if wanted.
             self.display_message(f"[To Group {group_id}] You: {msg}", "user_msg")
             
         self.msg_entry.delete(0, tk.END)

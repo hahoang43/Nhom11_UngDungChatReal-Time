@@ -3,11 +3,12 @@
 Ứng dụng chat real-time với giao diện web và desktop.
 
 ## Cài Đặt
+pip install -r requirements.txt
 
 1. Cài đặt Python 3.8+
 2. Cài đặt dependencies:
    ```bash
-   pip install -r requirements.txt
+   
    ```
 
 ## Chạy Chương Trình

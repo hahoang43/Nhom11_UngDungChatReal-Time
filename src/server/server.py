@@ -43,7 +43,7 @@ def download_file():
 
 @socketio.on('connect')
 def handle_connect():
-    print(f"Client connected: {request.sid}")
+    print(f"[SERVER] Client connected: {request.sid}", flush=True)
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -67,6 +67,7 @@ def handle_disconnect():
 @socketio.on('message')
 def handle_message(data):
     sid = request.sid
+    print(f"[SERVER] Nhận message từ client: {data}", flush=True)
     msg_type = data.get('type')
     payload = data.get('payload')
 
@@ -100,38 +101,20 @@ def handle_message(data):
         else:
             emit('message', {'type': 'ERROR', 'payload': 'Invalid username or password'})
 
-    elif msg_type == protocol.MSG_REGISTER:
+    if msg_type == protocol.MSG_LOGIN:
         username = payload.get('username')
-        password = payload.get('password')
-        if db.user_exists(username):
-            emit('message', {'type': 'ERROR', 'payload': 'Username already exists'})
+        password = payload.get('password', 'default')
+        if db.login_user(username, password):
+            clients[sid] = username
+            emit('message', {'type': 'LOGIN_SUCCESS', 'payload': f'Welcome {username}!'} )
+            # Do NOT send public history or join any group
+            emit('message', {'type': 'USER_GROUPS', 'payload': []})
+            broadcast_users_list()
+            broadcast_groups_list()
         else:
-            if db.register_user(username, password):
-                clients[sid] = username
-                emit('message', {'type': 'LOGIN_SUCCESS', 'payload': f'Welcome {username}!'})
-                
-                # Restore group memberships (should be empty for new user, but good for consistency/future proofing)
-                # Actually for new user it's empty, so we can skip or just send empty list
-                emit('message', {'type': 'USER_GROUPS', 'payload': []})
+            emit('message', {'type': 'ERROR', 'payload': 'Invalid username or password'})
 
-                broadcast_users_list()
-                broadcast_groups_list()
-            else:
-                emit('message', {'type': 'ERROR', 'payload': 'Registration failed'})
-
-    elif sid not in clients:
-        emit('message', {'type': 'ERROR', 'payload': 'Not authenticated'})
-        return
-
-    username = clients[sid]
-
-    if msg_type == protocol.MSG_TEXT:
-        content = payload
-        db.save_message(username, content, message_type='public')
-        emit('message', {
-            'type': protocol.MSG_TEXT,
-            'payload': f"{username}: {content}"
-        }, broadcast=True, include_self=False)
+    # Đã loại bỏ hoàn toàn luồng chat công khai MSG_TEXT
 
     elif msg_type == protocol.MSG_PRIVATE:
         receiver = payload.get('receiver')
@@ -212,6 +195,18 @@ def handle_message(data):
             emit('message', {'type': 'SUCCESS', 'payload': f"Left group {group_id}"})
         else:
             emit('message', {'type': 'ERROR', 'payload': "Failed to leave group"})
+
+    elif msg_type == 'GROUP_DELETE':
+        group_id = payload.get('group_id')
+        print(f"[SERVER] Nhận yêu cầu xóa nhóm: group_id={group_id}, username={username}", flush=True)
+        # Only allow creator to delete
+        if db.delete_group(group_id, username):
+            print(f"[SERVER] Đã xóa nhóm thành công: group_id={group_id}", flush=True)
+            emit('message', {'type': 'SUCCESS', 'payload': f'Group {group_id} deleted'})
+            broadcast_groups_list()
+        else:
+            print(f"[SERVER] Không xóa được nhóm: group_id={group_id}, username={username}", flush=True)
+            emit('message', {'type': 'ERROR', 'payload': 'You are not allowed to delete this group or deletion failed.'})
 
     elif msg_type == protocol.MSG_FILE_REQUEST:
         filename = payload.get('filename')

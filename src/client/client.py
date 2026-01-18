@@ -10,6 +10,17 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from src.common import protocol
 
 class ChatClient:
+    def delete_group(self, group_id):
+        """Request to delete a group (creator only)"""
+        if self.socket and self.running:
+            try:
+                protocol.send_json(self.socket, {
+                    'type': 'GROUP_DELETE',
+                    'payload': {'group_id': group_id}
+                })
+            except Exception as e:
+                print(f"[CLIENT ERROR] Delete group failed: {e}")
+
     def __init__(self, host='127.0.0.1', port=protocol.PORT):
         self.host = host
         self.port = port

@@ -16,6 +16,29 @@ except ImportError:
 DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../data/chat.db'))
 
 class Database:
+    def delete_group(self, group_id, username):
+        """Delete a group if the user is the creator. Removes group, its members, and messages."""
+        try:
+            # Check if user is creator
+            cursor = self.execute_query("SELECT creator FROM groups WHERE id = ?", (group_id,))
+            row = cursor.fetchone()
+            print(f"[DEBUG] Xóa nhóm: group_id={group_id}, username={username}, creator_trong_db={row['creator'] if row else None}", flush=True)
+            if not row or row['creator'] != username:
+                print(f"[DEBUG] Không xóa được: username gửi lên='{username}', creator trong db='{row['creator'] if row else None}'", flush=True)
+                return False
+            # Delete group members
+            self.execute_query("DELETE FROM group_members WHERE group_id = ?", (group_id,))
+            # Delete group messages
+            self.execute_query("DELETE FROM messages WHERE message_type = 'group' AND receiver = ?", (str(group_id),))
+            # Delete group
+            self.execute_query("DELETE FROM groups WHERE id = ?", (group_id,))
+            self.conn.commit()
+            print(f"[DEBUG] Đã xóa nhóm thành công: group_id={group_id}", flush=True)
+            return True
+        except Exception as e:
+            print(f"Delete group error: {e}", flush=True)
+            self.conn.rollback()
+            return False
     def __init__(self):
         """Khởi tạo kết nối database. Hỗ trợ SQLite (local) và Postgres (Production)"""
         self.db_url = os.environ.get('DATABASE_URL')
@@ -296,32 +319,19 @@ class Database:
         return result[::-1] # Reverse to chrono order
 
     def create_group(self, name, creator):
+        # Không cho phép tạo nhóm tên 'Chat Công Khai' hoặc các nhóm mặc định
+        if name.strip().lower() in ["chat công khai", "public chat", "public", "công khai"]:
+            return None
         try:
             cursor = self.execute_query(
                 "INSERT INTO groups (name, creator) VALUES (?, ?)",
                 (name, creator)
             )
-            # Get last ID
             if self.db_type == 'sqlite':
                 group_id = cursor.lastrowid
             else:
-                # Postgres needs explicit return or fetch
-                # Note: execute_query didn't use RETURNING. Let's fix that for PG?
-                # Actually, standard psycopg2 cursor.lastrowid is sometimes None.
-                # Use RETURNING id works best.
-                # We need to change the QUERY depending on DB type for INSERT returning.
-                pass 
-                
-            # Quick fix for ID retrieval: use a specific query for creation
-            # Revise implementation below
-            
-            if self.db_type == 'postgres':
                 cursor = self.execute_query("INSERT INTO groups (name, creator) VALUES (?, ?) RETURNING id", (name, creator))
                 group_id = cursor.fetchone()['id']
-            else:
-                # SQLite usually sets lastrowid on cursor
-                group_id = cursor.lastrowid
-
             self.execute_query(
                 "INSERT INTO group_members (group_id, username) VALUES (?, ?)",
                 (group_id, creator)
@@ -385,8 +395,8 @@ class Database:
         return result
 
     def get_all_groups(self):
-        cursor = self.execute_query("SELECT id, name, creator, created_at FROM groups")
-        return [dict(row) for row in cursor.fetchall()] # Basic conversion
+        cursor = self.execute_query("SELECT id, name, creator, created_at FROM groups WHERE LOWER(name) NOT IN ('chat công khai', 'public chat', 'public', 'công khai')")
+        return [dict(row) for row in cursor.fetchall()]
 
     def get_group_members(self, group_id):
         cursor = self.execute_query("SELECT username FROM group_members WHERE group_id = ?", (group_id,))

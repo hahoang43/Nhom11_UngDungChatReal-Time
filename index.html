@@ -6,11 +6,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Real-time</title>
-    <link rel="icon" href="./assets/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         :root {
             --primary: #6366f1;
@@ -37,11 +37,12 @@
 
         body {
             background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 50%, #fbcfe8 100%);
+            height: 100vh;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 0;
             color: var(--dark);
             overflow: hidden;
         }
@@ -55,29 +56,9 @@
             opacity: 0.6;
         }
 
-        .shape-1 {
-            background: var(--primary);
-            width: 400px;
-            height: 400px;
-            top: -100px;
-            left: -100px;
-        }
-
-        .shape-2 {
-            background: var(--secondary);
-            width: 300px;
-            height: 300px;
-            bottom: -50px;
-            right: -50px;
-        }
-
-        .shape-3 {
-            background: var(--info);
-            width: 250px;
-            height: 250px;
-            top: 40%;
-            left: 60%;
-        }
+        .shape-1 { background: var(--primary); width: 400px; height: 400px; top: -100px; left: -100px; }
+        .shape-2 { background: var(--secondary); width: 300px; height: 300px; bottom: -50px; right: -50px; }
+        .shape-3 { background: var(--info); width: 250px; height: 250px; top: 40%; left: 60%; }
 
         /* Auth Container */
         .auth-container {
@@ -112,18 +93,17 @@
             font-weight: 600;
         }
 
-        /* Chat Container */
+        /* Chat Container - Flex Layout */
         .chat-container {
             width: 95vw;
             max-width: 1200px;
-            height: 90vh;
+            height: 90vh; /* Chỉnh lại chút cho cân đối */
             background: var(--glass-strong);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
-            display: none;
-            /* Flex when active */
+            display: none; /* Flex when active */
             box-shadow: var(--shadow);
             overflow: hidden;
             z-index: 10;
@@ -186,9 +166,7 @@
             transition: bg 0.2s;
         }
 
-        .btn-icon-small:hover {
-            background: rgba(99, 102, 241, 0.1);
-        }
+        .btn-icon-small:hover { background: rgba(99, 102, 241, 0.1); }
 
         .list-container {
             flex: 1;
@@ -222,27 +200,11 @@
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
-        .list-item.active .status-dot {
-            background: #4ade80;
-            border-color: var(--primary);
-        }
+        .list-item.active .status-dot { background: #4ade80; border-color: var(--primary); }
+        .list-item.active .item-actions button { color: white; opacity: 0.9; }
 
-        .list-item.active .item-actions button {
-            color: white;
-            opacity: 0.9;
-        }
-
-        .item-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-        }
-
-        .item-actions {
-            display: flex;
-            gap: 5px;
-        }
+        .item-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .item-actions { display: flex; gap: 5px; }
 
         .action-btn {
             padding: 4px 8px;
@@ -253,41 +215,32 @@
             font-weight: 600;
         }
 
-        .btn-join {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-        }
+        .btn-join { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .btn-join:hover { background: var(--success); color: white; }
+        .btn-leave { background: rgba(239, 68, 68, 0.1); color: var(--danger); visibility: hidden; }
+        .list-item:hover .btn-leave { visibility: visible; }
+        .btn-leave:hover { background: var(--danger); color: white; }
 
-        .btn-join:hover {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-leave {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            visibility: hidden;
-        }
-
-        .list-item:hover .btn-leave {
-            visibility: visible;
-        }
-
-        .btn-leave:hover {
-            background: var(--danger);
-            color: white;
-        }
-
-        /* Main Chat Area */
+        /* --- CHAT MAIN AREA (FIXED LAYOUT) --- */
         .chat-main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
+            flex: 1 1 0%;
             background: rgba(255, 255, 255, 0.4);
+            position: relative;
+            height: 100%;
+            display: flex; /* Quan trọng */
+            flex-direction: column;
+        }
+
+        /* Container của nội dung chat */
+        #chatMainContent {
+            display: flex; /* Flex cột */
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
         }
 
         .chat-header {
+            flex-shrink: 0;
             padding: 20px 30px;
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
             background: rgba(255, 255, 255, 0.8);
@@ -298,21 +251,14 @@
             z-index: 5;
         }
 
-        .chat-title h2 {
-            font-size: 1.1rem;
-            color: var(--dark);
-            margin-bottom: 2px;
-        }
+        .chat-title h2 { font-size: 1.1rem; color: var(--dark); margin-bottom: 2px; }
+        .chat-subtitle { font-size: 0.85rem; color: #64748b; }
 
-        .chat-subtitle {
-            font-size: 0.85rem;
-            color: #64748b;
-        }
-
+        /* Vùng tin nhắn: Tự giãn (flex: 1) và scroll */
         .messages-area {
             flex: 1;
-            padding: 30px;
             overflow-y: auto;
+            padding: 30px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -331,62 +277,31 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .message.received {
-            background: white;
-            border-bottom-left-radius: 4px;
-            align-self: flex-start;
-        }
-
-        .message.sent {
-            background: var(--primary);
-            color: white;
-            border-bottom-right-radius: 4px;
-            align-self: flex-end;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-        }
-
+        .message.received { background: white; border-bottom-left-radius: 4px; align-self: flex-start; }
+        .message.sent { background: var(--primary); color: white; border-bottom-right-radius: 4px; align-self: flex-end; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); }
         .message.system {
-            align-self: center;
-            background: rgba(0, 0, 0, 0.05);
-            color: #64748b;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            padding: 5px 15px;
-            max-width: 90%;
-            box-shadow: none;
+            align-self: center; background: rgba(0, 0, 0, 0.05); color: #64748b;
+            border-radius: 20px; font-size: 0.8rem; padding: 5px 15px; max-width: 90%; box-shadow: none;
         }
 
-        .msg-sender {
-            font-size: 0.75rem;
-            margin-bottom: 4px;
-            opacity: 0.7;
-            font-weight: 600;
-            color: var(--primary);
-        }
+        .msg-sender { font-size: 0.75rem; margin-bottom: 4px; opacity: 0.7; font-weight: 600; color: var(--primary); }
+        .sent .msg-sender { color: rgba(255, 255, 255, 0.8); text-align: right; }
 
-        .sent .msg-sender {
-            color: rgba(255, 255, 255, 0.8);
-            text-align: right;
-        }
-
+        /* Vùng nhập liệu: Cố định dưới đáy container */
         .input-area {
+            flex-shrink: 0;
             padding: 20px 30px;
             background: white;
             border-top: 1px solid rgba(0, 0, 0, 0.05);
             display: flex;
             gap: 15px;
             align-items: center;
+            position: relative;
+            z-index: 10;
         }
 
         .chat-input {
@@ -399,290 +314,21 @@
             font-size: 0.95rem;
         }
 
-        .chat-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
+        .chat-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
 
         .send-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
+            background: var(--primary); color: white; border: none;
+            width: 45px; height: 45px; border-radius: 12px; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
         }
-
-        .send-btn:hover {
-            background: var(--primary-dark);
-            transform: scale(1.05);
-        }
-
-        /* Generic UI Elements */
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 1rem;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-            transform: translateY(-1px);
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: all 0.2s;
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .input-group input:focus {
-            border-color: var(--primary);
-            background: white;
-        }
-
-        .tabs {
-            display: flex;
-            background: rgba(0, 0, 0, 0.05);
-            padding: 5px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            border-radius: 8px;
-            font-weight: 600;
-            color: #64748b;
-            transition: all 0.2s;
-        }
-
-        .tab.active {
-            background: white;
-            color: var(--primary);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-
-        /* --- MOBILE RESPONSIVE --- */
-        @media (max-width: 768px) {
-            body {
-                padding: 0;
-                overflow: hidden;
-                /* Prevent body scroll, handle internally */
-            }
-
-            .chat-container {
-                width: 100%;
-                height: 100vh;
-                border-radius: 0;
-                max-width: none;
-                flex-direction: row;
-                /* Keep flex row but toggle visibility */
-            }
-
-            .sidebar {
-                width: 100%;
-                border-right: none;
-                z-index: 20;
-            }
-
-            .chat-main {
-                display: none;
-                /* Hidden by default on mobile */
-                width: 100%;
-                height: 100vh;
-                position: absolute;
-                /* Overlay sidebar */
-                top: 0;
-                left: 0;
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                z-index: 30;
-            }
-
-            /* State: Chat Active (Show Chat, Hide Sidebar) */
-            .mobile-show-chat .sidebar {
-                display: none;
-            }
-
-            .mobile-show-chat .chat-main {
-                display: flex;
-            }
-
-            .back-btn {
-                display: inline-flex !important;
-            }
-
-            /* Adjust inputs for mobile */
-            .input-area {
-                padding: 10px 15px;
-            }
-
-            .chat-input {
-                border-radius: 20px;
-            }
-
-            .send-btn {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-            }
-        }
-
-        .back-btn {
-            display: none;
-            margin-right: 10px;
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            color: var(--primary);
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-        }
-
-        .back-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        /* Toast Notification */
-        #toast {
-            visibility: hidden;
-            min-width: 250px;
-            background-color: var(--dark);
-            color: #fff;
-            text-align: center;
-            border-radius: 8px;
-            padding: 12px;
-            position: fixed;
-            z-index: 100;
-            left: 50%;
-            bottom: 30px;
-            transform: translateX(-50%);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        #toast.show {
-            visibility: visible;
-            animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        }
-
-        @keyframes fadein {
-            from {
-                bottom: 0;
-                opacity: 0;
-            }
-
-            to {
-                bottom: 30px;
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeout {
-            from {
-                bottom: 30px;
-                opacity: 1;
-            }
-
-            to {
-                bottom: 0;
-                opacity: 0;
-            }
-        }
-
-        /* Typing Indicator */
-        .typing-indicator {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-left: 10px;
-            font-style: italic;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                opacity: 0.5;
-            }
-
-            50% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0.5;
-            }
-        }
-
-        /* Media Previews */
-        .media-preview {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 8px;
-            margin-top: 5px;
-            display: block;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .media-preview:hover {
-            transform: scale(1.02);
-        }
+        .send-btn:hover { background: var(--primary-dark); transform: scale(1.05); }
 
         /* Emoji Picker */
         .emoji-picker {
             position: absolute;
-            bottom: 80px;
+            bottom: 100%; /* Hiển thị phía trên input area */
             left: 30px;
+            margin-bottom: 10px;
             width: 300px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -695,18 +341,59 @@
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
             z-index: 100;
         }
+        .emoji-picker span { font-size: 1.2rem; cursor: pointer; padding: 4px; border-radius: 4px; text-align: center; transition: bg 0.2s; }
+        .emoji-picker span:hover { background: #f1f5f9; }
 
-        .emoji-picker span {
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            text-align: center;
-            transition: bg 0.2s;
-        }
+        /* Generic UI */
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; width: 100%; cursor: pointer; transition: all 0.2s; font-size: 1rem; }
+        .btn-primary:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transform: translateY(-1px); }
+        
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.95rem; outline: none; transition: all 0.2s; background: rgba(255, 255, 255, 0.8); }
+        .input-group input:focus { border-color: var(--primary); background: white; }
 
-        .emoji-picker span:hover {
-            background: #f1f5f9;
+        .tabs { display: flex; background: rgba(0, 0, 0, 0.05); padding: 5px; border-radius: 12px; margin-bottom: 25px; }
+        .tab { flex: 1; padding: 10px; border: none; background: transparent; cursor: pointer; border-radius: 8px; font-weight: 600; color: #64748b; transition: all 0.2s; }
+        .tab.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
+        
+        .hidden { display: none !important; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Media Previews */
+        .media-preview { max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 5px; display: block; cursor: pointer; transition: transform 0.2s; }
+        .media-preview:hover { transform: scale(1.02); }
+
+        /* Toast & Typing */
+        #toast { visibility: hidden; min-width: 250px; background-color: var(--dark); color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; z-index: 100; left: 50%; bottom: 30px; transform: translateX(-50%); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+        .typing-indicator { font-size: 0.75rem; color: #64748b; margin-left: 10px; font-style: italic; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        .back-btn { display: none; margin-right: 10px; background: none; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer; padding: 5px; border-radius: 50%; }
+        .back-btn:hover { background: rgba(0, 0, 0, 0.05); }
+
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 768px) {
+            body { overflow: hidden; }
+            .chat-container { width: 100%; height: 100vh; border-radius: 0; max-width: none; flex-direction: row; }
+            .sidebar { width: 100%; border-right: none; z-index: 20; }
+            .chat-main { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); z-index: 30; }
+            
+            .mobile-show-chat .sidebar { display: none; }
+            .mobile-show-chat .chat-main { display: flex; } /* Hiện dưới dạng Flex */
+            
+            .back-btn { display: inline-flex !important; }
+            .input-area { padding: 10px 15px; }
+            .chat-input { border-radius: 20px; }
+            .send-btn { width: 40px; height: 40px; border-radius: 50%; }
         }
     </style>
 </head>
@@ -745,8 +432,7 @@
                 <input type="password" id="regPass" placeholder="Mật khẩu" onkeypress="handleEnter(event, 'REGISTER')">
             </div>
             <div class="input-group">
-                <input type="password" id="regConfirm" placeholder="Xác nhận mật khẩu"
-                    onkeypress="handleEnter(event, 'REGISTER')">
+                <input type="password" id="regConfirm" placeholder="Xác nhận mật khẩu" onkeypress="handleEnter(event, 'REGISTER')">
             </div>
             <button onclick="handleAuth('REGISTER')" class="btn-primary">
                 <i class="fa-solid fa-user-plus"></i> Đăng Ký
@@ -762,8 +448,7 @@
                 <div class="avatar" id="myAvatar">U</div>
                 <div style="flex: 1;">
                     <h3 style="font-size: 1rem" id="myNameDisplay">User</h3>
-                    <div
-                        style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--success); font-weight: 500;">
+                    <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--success); font-weight: 500;">
                         <span style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></span>
                         Online
                     </div>
@@ -779,54 +464,58 @@
                     <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
-            <div class="list-container" id="groupsList">
-            </div>
+            <div class="list-container" id="groupsList"></div>
 
             <div class="section-title" style="margin-top: 25px;">
                 Người dùng Online
                 <span class="btn-icon-small"><i class="fa-solid fa-users"></i></span>
             </div>
-            <div class="list-container" id="usersList">
-            </div>
+            <div class="list-container" id="usersList"></div>
         </div>
 
         <div class="chat-main">
-            <div class="chat-header">
-                <button class="back-btn" onclick="backToSidebar()">
-                    <i class="fa-solid fa-arrow-left"></i>
-                </button>
-                <div class="avatar" style="background: var(--info);" id="targetAvatar">🌐</div>
-                <div class="chat-title">
-                    <h2 id="targetName">Chat Công Khai</h2>
-                    <div class="chat-subtitle" id="targetStatus">Hội thoại chung</div>
+            <div id="welcomeScreen" style="height: 100%; display: flex; align-items: center; justify-content: center; color: #64748b; flex-direction: column;">
+                <i class="fa-brands fa-rocketchat" style="font-size: 4rem; opacity: 0.2; margin-bottom: 20px;"></i>
+                <p>Chọn một đoạn chat để bắt đầu</p>
+            </div>
+
+            <div id="chatMainContent" style="display:none">
+                <div class="chat-header">
+                    <button class="back-btn" onclick="backToSidebar()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div class="avatar" style="background: var(--info);" id="targetAvatar"></div>
+                    <div class="chat-title">
+                        <h2 id="targetName"></h2>
+                        <div class="chat-subtitle" id="targetStatus"></div>
+                    </div>
+                    <div id="typingIndicator" class="typing-indicator hidden">Đang nhập...</div>
                 </div>
-                <div id="typingIndicator" class="typing-indicator hidden">Đang nhập...</div>
-            </div>
 
-            <!-- Audio Notification (Simple Pop Sound) -->
-            <audio id="notifySound"
-                src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
+                <audio id="notifySound" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
 
-            <div class="messages-area" id="messages">
-                <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
-            </div>
+                <div class="messages-area" id="messages">
+                    <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
+                </div>
 
-            <div class="input-area" style="position: relative;">
-                <div id="emojiPicker" class="emoji-picker hidden"></div>
-
-                <input type="file" id="fileInput" style="display:none" />
-                <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;"
-                    onclick="document.getElementById('fileInput').click()">
-                    <i class="fa-solid fa-paperclip"></i>
-                </button>
-                <button class="btn-icon-small" id="emojiBtn" title="Emoji" style="font-size: 1.2rem; color: #fbbf24;"
-                    onclick="toggleEmojiPicker()">
-                    <i class="fa-solid fa-face-smile"></i>
-                </button>
-                <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." autocomplete="off">
-                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
+                <div class="input-area">
+                    <div id="emojiPicker" class="emoji-picker hidden"></div>
+                    <input type="file" id="fileInput" style="display:none" />
+                    
+                    <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;" onclick="document.getElementById('fileInput').click()">
+                        <i class="fa-solid fa-paperclip"></i>
+                    </button>
+                    
+                    <button class="btn-icon-small" id="emojiBtn" title="Emoji" style="font-size: 1.2rem; color: #fbbf24;" onclick="toggleEmojiPicker()">
+                        <i class="fa-solid fa-face-smile"></i>
+                    </button>
+                    
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." autocomplete="off">
+                    
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -838,47 +527,90 @@
         const SERVER_URL = "https://nhom11-ungdungchatreal-time.onrender.com/";
         let socket = null;
 
-        // --- File Send Logic ---
-        const CHUNK_SIZE = 4096;
-        document.getElementById('fileInput').addEventListener('change', async function (e) {
-            const file = e.target.files[0];
-            if (!file || !socket || !socket.connected) return;
-            // Gửi thông tin file
-            sendJson('FILE_REQUEST', {
-                filename: file.name,
-                filesize: file.size,
-                receiver: null // hoặc chọn người nhận nếu cần
-            });
-            // Gửi từng chunk
-            let chunkNum = 0;
-            const reader = new FileReader();
-            let offset = 0;
-            function sendChunk() {
-                const slice = file.slice(offset, offset + CHUNK_SIZE);
-                reader.readAsArrayBuffer(slice);
-            }
-            reader.onload = function (ev) {
-                const chunk = new Uint8Array(ev.target.result);
-                const chunk_b64 = btoa(String.fromCharCode.apply(null, chunk));
-                sendJson('FILE_CHUNK', {
-                    chunk_num: chunkNum,
-                    data: chunk_b64
-                });
-                offset += CHUNK_SIZE;
-                chunkNum++;
-                if (offset < file.size) {
-                    sendChunk();
-                } else {
-                    sendJson('FILE_END', {});
-                    showToast('Đã gửi file: ' + file.name);
-                }
-            };
-            sendChunk();
-        });
-
         let myName = "";
-        let currentTarget = "Public:Public"; // Type:ID
-        let myGroups = new Set(); // Stores group IDs I am a member of
+        let currentTarget = null; 
+        let myGroups = new Set();
+        let typingTimeout = null;
+        const CHUNK_SIZE = 4096;
+
+        // --- Init Listeners ---
+        window.addEventListener('DOMContentLoaded', function () {
+            // File Input
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', async function (e) {
+                    const file = e.target.files[0];
+                    if (!file || !socket || !socket.connected) return;
+                    sendJson('FILE_REQUEST', {
+                        filename: file.name,
+                        filesize: file.size,
+                        receiver: null
+                    });
+                    let chunkNum = 0;
+                    const reader = new FileReader();
+                    let offset = 0;
+                    function sendChunk() {
+                        const slice = file.slice(offset, offset + CHUNK_SIZE);
+                        reader.readAsArrayBuffer(slice);
+                    }
+                    reader.onload = function (ev) {
+                        const chunk = new Uint8Array(ev.target.result);
+                        const chunk_b64 = btoa(String.fromCharCode.apply(null, chunk));
+                        sendJson('FILE_CHUNK', {
+                            chunk_num: chunkNum,
+                            data: chunk_b64
+                        });
+                        offset += CHUNK_SIZE;
+                        chunkNum++;
+                        if (offset < file.size) {
+                            sendChunk();
+                        } else {
+                            sendJson('FILE_END', {});
+                            showToast('Đã gửi file: ' + file.name);
+                        }
+                    };
+                    sendChunk();
+                });
+            }
+
+            // Chat Input (Typing + Enter)
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.onkeypress = (e) => {
+                    if (e.key === 'Enter') sendMessage();
+                };
+                chatInput.addEventListener('input', function () {
+                    if (typingTimeout) clearTimeout(typingTimeout);
+                    if (!currentTarget) return;
+
+                    let targetVal = null;
+                    let mode = null;
+
+                    if (currentTarget.startsWith('User:')) {
+                        mode = 'private';
+                        targetVal = currentTarget.split(':')[1];
+                    } else if (currentTarget.startsWith('Group:')) {
+                        mode = 'group';
+                        targetVal = parseInt(currentTarget.split(':')[1]);
+                    }
+
+                    if (mode && targetVal) {
+                        sendJson('TYPING', { mode: mode, target: targetVal });
+                    }
+                    
+                    typingTimeout = setTimeout(() => {
+                        stopTypingEvent();
+                    }, 2000);
+                });
+            }
+
+            // Auto Login Check
+            const savedUser = localStorage.getItem('chat_username');
+            const savedPass = localStorage.getItem('chat_password');
+            if (savedUser) document.getElementById('loginUser').value = savedUser;
+            if (savedPass) document.getElementById('loginPass').value = savedPass;
+            if (savedUser && savedPass) handleAuth('LOGIN', true);
+        });
 
         // --- Auth UI Logic ---
         function switchAuth(mode) {
@@ -915,7 +647,7 @@
             setTimeout(() => { el.className = el.className.replace("show", ""); }, 3000);
         }
 
-        // --- Socket.IO Logic ---
+        // --- Socket.IO & Auth Logic ---
         function handleAuth(type, autoLogin = false) {
             const userIn = type === 'LOGIN' ? document.getElementById('loginUser') : document.getElementById('regUser');
             const passIn = type === 'LOGIN' ? document.getElementById('loginPass') : document.getElementById('regPass');
@@ -931,19 +663,12 @@
             }
 
             if (!username || !password) {
-                if (!autoLogin) {
-                    document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
-                }
+                if (!autoLogin) document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
                 return;
             }
 
-            // --- SỬA LỖI Ở ĐÂY: LUÔN KẾT NỐI TỚI RENDER ---
             if (!socket || socket.disconnected) {
-                // Ép buộc kết nối tới Server Render, không quan tâm đang chạy ở đâu
-                socket = io(SERVER_URL, {
-                    transports: ['websocket', 'polling']
-                });
-
+                socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
                 socket.on('connect', () => {
                     sendJson(type, { username, password });
                     myName = username;
@@ -956,7 +681,6 @@
                 });
                 socket.on('message', (data) => handleServerMessage(data));
 
-                // Trường hợp nếu socket đã sẵn sàng (đôi khi xảy ra)
                 if (socket.connected) {
                     sendJson(type, { username, password });
                     myName = username;
@@ -968,16 +692,11 @@
         }
 
         function sendJson(type, payload) {
-            if (socket && socket.connected) {
-                socket.emit('message', { type, payload });
-            }
+            if (socket) socket.emit('message', { type, payload });
         }
 
         function handleServerMessage(data) {
-            // Check nếu data là string
-            if (typeof data === 'string') {
-                try { data = JSON.parse(data); } catch (e) { }
-            }
+            if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { } }
             console.log("Recv:", data);
 
             switch (data.type) {
@@ -997,10 +716,7 @@
                     showToast(data.payload);
                     break;
                 case 'TEXT':
-                    if (currentTarget === 'Public:Public') {
-                        appendMessage(data.payload);
-                        if (!data.payload.startsWith(myName + ':')) playSound();
-                    }
+                    // Public chat not used in this UI version mostly
                     break;
                 case 'PRIVATE':
                     const p = data.payload;
@@ -1018,57 +734,35 @@
                         const msgType = (data.payload.sender === myName) ? 'sent' : 'received';
                         appendMessage(data.payload.content, msgType, data.payload.sender);
                         if (data.payload.sender !== myName) playSound();
-                    }
-                    else if (myGroups.has(data.payload.group_id) && data.payload.sender !== myName) {
-                        // Optional: Toast for background group message
+                    } else if (myGroups.has(data.payload.group_id) && data.payload.sender !== myName) {
                         playSound();
                     }
                     break;
                 case 'USER_GROUPS':
                     myGroups.clear();
                     data.payload.forEach(gid => myGroups.add(gid));
-                    // If we have a stored list of groups, re-render it to update buttons
-                    // But usually handling this silently is fine until GROUPS_LIST comes.
-                    // However, if GROUPS_LIST came first, we need to re-render.
-                    // We can try to trigger a re-render if the container has children.
-                    const groupsContainer = document.getElementById('groupsList');
-                    if (groupsContainer.children.length > 0) {
-                        // We need the data to re-render. 
-                        // Simplified: Request groups list again if we want to be sure, or just wait.
-                        // Actually, 'GROUPS_LIST' is broadcasted on login too, so it's a race.
-                        // Best approach: Just update state. GROUPS_LIST handler renders based on State.
-                        // If GROUPS_LIST handled first, it used empty myGroups.
-                        // If USER_GROUPS handled second, we need to update UI.
-                        // Let's request GROUPS_LIST refresh just in case, or store groups data globally.
-                        // For now, let's just send a request to refresh groups list
-                        // sendJson('GROUPS_REQUEST', null); // Use existing broadcast logic
-                    }
-                    // Force re-fetch groups list to update UI
-                    // Server broadcasts it on login anyway, but if timing ensures USER_GROUPS first...
-                    // Actually server sends USER_GROUPS *before* broadcast_groups_list in my code.
-                    // So we are good.
+                    // Request fresh list to update buttons
+                    sendJson('GROUPS_REQUEST', null);
                     break;
                 case 'FILE':
                     const file = data.payload;
                     const fileUrl = `${SERVER_URL}/download?filename=${encodeURIComponent(file.filename)}`;
                     let fileMsg = "";
-
-                    // Check file extension for preview
                     const ext = file.filename.split('.').pop().toLowerCase();
+                    
                     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                        fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div>
-                                   <img src="${fileUrl}" class="media-preview" onclick="window.open('${fileUrl}', '_blank')">`;
+                        fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><img src="${fileUrl}" class="media-preview" onclick="window.open('${fileUrl}', '_blank')">`;
                     } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
-                        fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div>
-                                   <video src="${fileUrl}" controls class="media-preview" style="max-height: 200px"></video>`;
+                        fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><video src="${fileUrl}" controls class="media-preview" style="max-height: 200px"></video>`;
                     } else {
                         fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize / 1024).toFixed(1)} KB)`;
                     }
 
-                    // FIX: Check if I am the sender
                     const isMe = (file.sender === myName);
+                    // Hiển thị nếu đang ở đúng khung chat
+                    // Cần logic server trả về receiver/group_id để check, ở đây giả định server broadcast đúng
+                    // Simplified: just append if it looks like current context or just ignore context check for now
                     appendMessage(fileMsg, isMe ? 'sent' : 'received', file.sender || 'File');
-
                     if (!isMe) playSound();
                     break;
                 case 'TYPING':
@@ -1090,7 +784,7 @@
             const audio = document.getElementById('notifySound');
             if (audio) {
                 audio.currentTime = 0;
-                audio.play().catch(e => console.log("Audio play failed (user interaction needed first):", e));
+                audio.play().catch(e => {});
             }
         }
 
@@ -1098,20 +792,10 @@
             const indicator = document.getElementById('typingIndicator');
             let show = false;
 
-            if (payload.mode === 'public') {
-                if (currentTarget === 'Public:Public' && payload.sender !== myName) {
-                    show = true;
-                }
-            } else if (payload.mode === 'private') {
-                // Sender is typing to ME.
-                // Current target must be User:Sender
-                if (currentTarget === `User:${payload.sender}`) {
-                    show = true;
-                }
+            if (payload.mode === 'private') {
+                if (currentTarget === `User:${payload.sender}`) show = true;
             } else if (payload.mode === 'group') {
-                if (currentTarget === `Group:${payload.group_id}` && payload.sender !== myName) {
-                    show = true;
-                }
+                if (currentTarget === `Group:${payload.group_id}` && payload.sender !== myName) show = true;
             }
 
             if (show && isTyping) {
@@ -1122,40 +806,34 @@
             }
         }
 
+        function stopTypingEvent() {
+            if (!currentTarget) return;
+            if (currentTarget.startsWith('User:')) {
+                const target = currentTarget.split(':')[1];
+                sendJson('STOP_TYPING', { mode: 'private', target: target });
+            } else if (currentTarget.startsWith('Group:')) {
+                const target = parseInt(currentTarget.split(':')[1]);
+                sendJson('STOP_TYPING', { mode: 'group', target: target });
+            }
+        }
+
         function enterChatMode() {
             document.getElementById('authPanel').style.display = 'none';
-            document.getElementById('chatPanel').style.display = 'flex';
+            document.getElementById('chatPanel').style.display = 'flex'; // Chat panel là flex
             document.getElementById('myNameDisplay').textContent = myName;
             document.getElementById('myAvatar').textContent = myName.charAt(0).toUpperCase();
 
-            // Set default target
-            setTarget('Public', 'Public', 'Chat Công Khai');
+            // Reset Chat View
+            document.getElementById('chatMainContent').style.display = 'none';
+            document.getElementById('welcomeScreen').style.display = 'flex';
         }
 
-        // Khi load lại trang, nếu có username và password trong localStorage thì tự động đăng nhập lại
-        window.addEventListener('DOMContentLoaded', function () {
-            const savedUser = localStorage.getItem('chat_username');
-            const savedPass = localStorage.getItem('chat_password');
-            if (savedUser) {
-                document.getElementById('loginUser').value = savedUser;
-            }
-            if (savedPass) {
-                document.getElementById('loginPass').value = savedPass;
-            }
-            if (savedUser && savedPass) {
-                // Tự động đăng nhập lại
-                handleAuth('LOGIN', true);
-            }
-        });
-
-        // --- Chat UI Rendering ---
+        // --- Render Lists ---
         function renderUsers(users) {
             const container = document.getElementById('usersList');
             container.innerHTML = '';
-
             users.forEach(u => {
                 if (u === myName) return;
-
                 const div = document.createElement('div');
                 div.className = `list-item ${currentTarget === `User:${u}` ? 'active' : ''}`;
                 div.innerHTML = `
@@ -1173,44 +851,80 @@
         function renderGroups(groups) {
             const container = document.getElementById('groupsList');
             container.innerHTML = '';
-
             groups.forEach(g => {
                 const isMember = myGroups.has(g.id);
                 const isActive = currentTarget === `Group:${g.id}`;
-
+                const isCreator = g.creator === myName;
                 const div = document.createElement('div');
                 div.className = `list-item ${isActive ? 'active' : ''}`;
+                
+                let actions = `
+                    <button class="action-btn btn-join ${isMember ? 'hidden' : ''}" onclick="joinGroup(${g.id}, '${g.name}')">Join</button>
+                    <button class="action-btn btn-leave ${isMember ? '' : 'hidden'}" onclick="leaveGroup(${g.id})">Leave</button>
+                `;
+                if (isCreator) {
+                    actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
+                }
+                
                 div.innerHTML = `
-                   <div class="item-info" onclick="setTarget('Group', '${g.id}', '${g.name}')">
+                    <div class="item-info" ${isMember ? `onclick=\"setTarget('Group', '${g.id}', '${g.name}')\"` : ''} style="${isMember ? '' : 'cursor:not-allowed;opacity:0.7;'}">
                         <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: var(--secondary);">
                             <i class="fa-solid fa-users"></i>
                         </div>
                         <span>${g.name}</span>
                     </div>
-                    <div class="item-actions">
-                        <button class="action-btn btn-join ${isMember ? 'hidden' : ''}" onclick="joinGroup(${g.id}, '${g.name}')">Join</button>
-                        <button class="action-btn btn-leave ${isMember ? '' : 'hidden'}" onclick="leaveGroup(${g.id})">Leave</button>
-                    </div>
+                    <div class="item-actions">${actions}</div>
                 `;
                 container.appendChild(div);
             });
         }
 
+        function createNewGroup() {
+            const name = prompt("Nhập tên nhóm mới:");
+            if (name) sendJson('GROUP_CREATE', name);
+        }
+
+        function deleteGroup(gid, gname) {
+            if (!confirm(`Bạn có chắc muốn xóa nhóm '${gname}'?`)) return;
+            sendJson('GROUP_DELETE', { group_id: gid });
+        }
+
+        function joinGroup(gid, gname) {
+            sendJson('GROUP_JOIN', gid);
+            myGroups.add(gid);
+            showToast(`Đã tham gia nhóm ${gname}`);
+            setTarget('Group', gid, gname);
+        }
+
+        function leaveGroup(gid) {
+            if (!confirm("Bạn có chắc muốn rời nhóm?")) return;
+            sendJson('GROUP_LEAVE', gid);
+            myGroups.delete(gid);
+            if (currentTarget === `Group:${gid}`) {
+                currentTarget = null;
+                document.getElementById('chatMainContent').style.display = 'none';
+                document.getElementById('welcomeScreen').style.display = 'flex';
+            }
+            showToast("Đã rời nhóm");
+        }
+
+        // --- Chat Navigation ---
         function setTarget(type, id, name) {
             currentTarget = `${type}:${id}`;
+            
+            // Switch view
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('chatMainContent').style.display = 'flex'; // Must be flex
+
+            // Update Header
             const targetNameEl = document.getElementById('targetName');
             const targetStatusEl = document.getElementById('targetStatus');
             const targetAvatarEl = document.getElementById('targetAvatar');
 
             targetNameEl.textContent = name;
-
             document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
 
-            if (type === 'Public') {
-                targetStatusEl.textContent = "Hội thoại chung với mọi người";
-                targetAvatarEl.innerHTML = '🌐';
-                targetAvatarEl.style.background = 'var(--info)';
-            } else if (type === 'User') {
+            if (type === 'User') {
                 targetStatusEl.textContent = "Tin nhắn riêng tư";
                 targetAvatarEl.innerHTML = name.charAt(0).toUpperCase();
                 targetAvatarEl.style.background = '#e2e8f0';
@@ -1219,18 +933,17 @@
                 targetStatusEl.textContent = `Nhóm ID: ${id}`;
                 targetAvatarEl.innerHTML = '<i class="fa-solid fa-users"></i>';
                 targetAvatarEl.style.background = 'var(--secondary)';
+                targetAvatarEl.style.color = 'white';
             }
 
             document.getElementById('messages').innerHTML = '';
-            // Gửi yêu cầu lấy lịch sử chat từ server
-            if (type === 'User') {
-                sendJson('HISTORY_REQUEST', { history_type: 'private', target: id });
-            } else if (type === 'Group') {
-                sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
-            }
+            
+            // Fetch History
+            if (type === 'User') sendJson('HISTORY_REQUEST', { history_type: 'private', target: id });
+            else if (type === 'Group') sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
+            
             appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
 
-            // Mobile: Switch to chat view
             if (window.innerWidth <= 768) {
                 document.getElementById('chatPanel').classList.add('mobile-show-chat');
             }
@@ -1240,7 +953,6 @@
             document.getElementById('chatPanel').classList.remove('mobile-show-chat');
         }
 
-        // --- Actions ---
         function logout() {
             if (confirm("Bạn có chắc muốn đăng xuất?")) {
                 localStorage.removeItem('chat_username');
@@ -1249,71 +961,28 @@
             }
         }
 
-        function createNewGroup() {
-            const name = prompt("Nhập tên nhóm mới:");
-            if (name) {
-                sendJson('GROUP_CREATE', name);
-            }
-        }
-
-        function joinGroup(gid, gname) {
-            sendJson('GROUP_JOIN', gid);
-            myGroups.add(gid);
-            // Refresh lại list để nút Join ẩn đi
-            event.target.classList.add('hidden');
-            event.target.nextElementSibling.classList.remove('hidden');
-            showToast(`Đã tham gia nhóm ${gname}`);
-        }
-
-        function leaveGroup(gid) {
-            if (!confirm("Bạn có chắc muốn rời nhóm?")) return;
-            sendJson('GROUP_LEAVE', gid);
-            myGroups.delete(gid);
-            event.target.classList.add('hidden');
-            event.target.previousElementSibling.classList.remove('hidden');
-            if (currentTarget === `Group:${gid}`) {
-                setTarget('Public', 'Public', 'Chat Công Khai');
-            }
-            showToast("Đã rời nhóm");
-        }
-
         function sendMessage() {
             const input = document.getElementById('chatInput');
             const txt = input.value.trim();
-            if (!txt) return;
+            if (!txt || !currentTarget) return;
 
-            // Check Msg Type
-            if (currentTarget === 'Public:Public') {
-                sendJson('TEXT', txt);
-                appendMessage(txt, 'sent');
-            } else if (currentTarget.startsWith('User:')) {
+            if (currentTarget.startsWith('User:')) {
                 const targetUser = currentTarget.split(':')[1];
                 sendJson('PRIVATE', { receiver: targetUser, content: txt });
                 appendMessage(txt, 'sent');
             } else if (currentTarget.startsWith('Group:')) {
                 const groupId = parseInt(currentTarget.split(':')[1]);
-                if (!myGroups.has(groupId)) {
-                    // Quick check
-                }
                 sendJson('GROUP', { group_id: groupId, content: txt });
                 appendMessage(txt, 'sent');
             }
             input.value = '';
+            stopTypingEvent();
         }
 
         function appendMessage(content, type = 'received', sender = '') {
             const container = document.getElementById('messages');
             let displayContent = content;
             let displaySender = sender;
-
-            if (type === 'received' && !sender) {
-                if (content.includes(':')) {
-                    const parts = content.split(':');
-                    if (parts.length >= 2) {
-                        if (!displaySender) displaySender = parts[0].trim();
-                    }
-                }
-            }
 
             const div = document.createElement('div');
             div.className = `message ${type}`;
@@ -1329,67 +998,17 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        document.getElementById('chatInput').onkeypress = (e) => {
-            if (e.key === 'Enter') sendMessage();
-        }
-
-        // --- Typing Logic ---
-        let typingTimeout = null;
-
-        document.getElementById('chatInput').addEventListener('input', function () {
-            if (typingTimeout) clearTimeout(typingTimeout);
-
-            // Emit start typing
-            if (currentTarget === 'Public:Public') {
-                sendJson('TYPING', { mode: 'public', target: 'public' });
-            } else if (currentTarget.startsWith('User:')) {
-                const target = currentTarget.split(':')[1];
-                sendJson('TYPING', { mode: 'private', target: target });
-            } else if (currentTarget.startsWith('Group:')) {
-                const target = parseInt(currentTarget.split(':')[1]);
-                sendJson('TYPING', { mode: 'group', target: target });
-            }
-
-            typingTimeout = setTimeout(() => {
-                stopTypingEvent();
-            }, 2000);
-        });
-
-        function stopTypingEvent() {
-            if (currentTarget === 'Public:Public') {
-                sendJson('STOP_TYPING', { mode: 'public', target: 'public' });
-            } else if (currentTarget.startsWith('User:')) {
-                const target = currentTarget.split(':')[1];
-                sendJson('STOP_TYPING', { mode: 'private', target: target });
-            } else if (currentTarget.startsWith('Group:')) {
-                const target = parseInt(currentTarget.split(':')[1]);
-                sendJson('STOP_TYPING', { mode: 'group', target: target });
-            }
-        }
-
-
         // --- Emoji Logic ---
-        const emojis = ["😀", "😂", "🥰", "😍", "😎", "😭", "😡", "👍", "👎", "🎉", "❤️", "💔", "🔥", "✨", "🎁", "👋", "🙏", "🤝", "👀", "💯", "✅", "❌", "❓", "🎵", "📷", "⚽", "🍔", "🍕", "🍺", "🚀", "💡", "💻", "📱", "📞", "⏰", "🏠"];
-
+        const emojis = ["😀", "😂", "🥰", "😍", "😎", "😭", "😡", "👍", "👎", "🎉", "❤️", "💔", "🔥", "✨", "🎁", "👋", "🙏", "🤝", "👀", "💯", "✅", "❌", "❓"];
         function toggleEmojiPicker() {
             const picker = document.getElementById('emojiPicker');
-            const btn = document.getElementById('emojiBtn');
-            const isHidden = picker.classList.contains('hidden');
-
-            if (isHidden) {
-                picker.classList.remove('hidden');
-            } else {
-                picker.classList.add('hidden');
-            }
+            picker.classList.toggle('hidden');
         }
-
         function insertEmoji(emoji) {
             const input = document.getElementById('chatInput');
             input.value += emoji;
             input.focus();
         }
-
-        // Close picker when clicking outside
         document.addEventListener('click', function (e) {
             const picker = document.getElementById('emojiPicker');
             const btn = document.getElementById('emojiBtn');
@@ -1397,8 +1016,6 @@
                 picker.classList.add('hidden');
             }
         });
-
-        // Initialize Picker
         const pickerContainer = document.getElementById('emojiPicker');
         if (pickerContainer) {
             emojis.forEach(emo => {
@@ -1410,5 +1027,4 @@
         }
     </script>
 </body>
-
 </html>
