@@ -1,224 +1,169 @@
-import socket
-import threading
+
+# ChatClient sử dụng python-socketio để kết nối Flask-SocketIO server
+import socketio
 import sys
 import os
-import json
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
 from src.common import protocol
 
 class ChatClient:
-    def delete_group(self, group_id):
-        """Request to delete a group (creator only)"""
-        if self.socket and self.running:
-            try:
-                protocol.send_json(self.socket, {
-                    'type': 'GROUP_DELETE',
-                    'payload': {'group_id': group_id}
-                })
-            except Exception as e:
-                print(f"[CLIENT ERROR] Delete group failed: {e}")
-
-    def __init__(self, host='127.0.0.1', port=protocol.PORT):
+    def __init__(self, host='127.0.0.1', port=8000):
         self.host = host
         self.port = port
-        self.socket = None
+        self.sio = socketio.Client()
         self.username = None
         self.running = False
-        self.on_message_received = None # Callback function
-        self.on_login_response = None # Callback for login/register response
-        self.on_users_list_received = None # Callback for user list
-        self.on_groups_list_received = None # Callback for group list
-        self.on_server_response = None # Callback for SUCCESS/ERROR messages
+        self.on_message_received = None
+        self.on_login_response = None
+        self.on_users_list_received = None
+        self.on_groups_list_received = None
+        self.on_server_response = None
         self.waiting_for_login = False
+        self._register_events()
+
+    def _register_events(self):
+        @self.sio.event
+        def connect():
+            self.running = True
+            print("[CLIENT] Connected to server.")
+
+        @self.sio.event
+        def disconnect():
+            self.running = False
+            print("[CLIENT] Disconnected from server.")
+            if self.on_message_received:
+                self.on_message_received("Disconnected from server.")
+
+        @self.sio.on('message')
+        def on_message(data):
+            msg_type = data.get('type')
+            payload = data.get('payload')
+            if self.waiting_for_login:
+                if msg_type == 'LOGIN_SUCCESS':
+                    self.waiting_for_login = False
+                    if self.on_login_response:
+                        self.on_login_response(True, payload)
+                elif msg_type == 'ERROR':
+                    self.waiting_for_login = False
+                    if self.on_login_response:
+                        self.on_login_response(False, payload)
+                    self.disconnect()
+                elif msg_type == protocol.MSG_TEXT:
+                    if self.on_message_received:
+                        self.on_message_received(payload)
+            else:
+                if msg_type == protocol.MSG_TEXT:
+                    if self.on_message_received:
+                        self.on_message_received(payload)
+                elif msg_type == protocol.MSG_PRIVATE:
+                    sender = payload.get('sender')
+                    content = payload.get('content')
+                    if self.on_message_received:
+                        self.on_message_received(f"[Private] {sender}: {content}", msg_type, sender)
+                elif msg_type == protocol.MSG_GROUP:
+                    sender = payload.get('sender')
+                    group_id = payload.get('group_id')
+                    content = payload.get('content')
+                    if self.on_message_received:
+                        self.on_message_received(f"[Group {group_id}] {sender}: {content}", msg_type, group_id)
+                elif msg_type == protocol.MSG_USERS_LIST:
+                    if self.on_users_list_received:
+                        self.on_users_list_received(payload)
+                elif msg_type == protocol.MSG_GROUPS_LIST:
+                    if self.on_groups_list_received:
+                        self.on_groups_list_received(payload)
+                elif msg_type in ['SUCCESS', 'ERROR']:
+                    if self.on_server_response:
+                        self.on_server_response(msg_type, payload)
 
     def connect(self, username, password='default'):
-        """Connects to the server and performs login"""
-        # ... (rest of connect remains same)
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((self.host, self.port))
             self.username = username
-            self.running = True
             self.waiting_for_login = True
-
-            # Send Login Message with username and password
+            self.sio.connect(f"http://{self.host}:{self.port}")
             login_msg = {
-                'type': protocol.MSG_LOGIN, 
+                'type': protocol.MSG_LOGIN,
                 'payload': {'username': username, 'password': password}
             }
-            protocol.send_json(self.socket, login_msg)
-
-            # Start listening thread
-            receive_thread = threading.Thread(target=self.receive_loop)
-            receive_thread.daemon = True
-            receive_thread.start()
-            
+            self.sio.emit('message', login_msg)
             return True
         except Exception as e:
             print(f"[CLIENT ERROR] Connection failed: {e}")
             return False
 
     def register(self, username, password):
-        """Connects to the server and performs registration"""
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((self.host, self.port))
             self.username = username
-            self.running = True
             self.waiting_for_login = True
-
-            # Send Register Message with username and password
+            self.sio.connect(f"http://{self.host}:{self.port}")
             register_msg = {
-                'type': protocol.MSG_REGISTER, 
+                'type': protocol.MSG_REGISTER,
                 'payload': {'username': username, 'password': password}
             }
-            protocol.send_json(self.socket, register_msg)
-
-            # Start listening thread
-            receive_thread = threading.Thread(target=self.receive_loop)
-            receive_thread.daemon = True
-            receive_thread.start()
-            
+            self.sio.emit('message', register_msg)
             return True
         except Exception as e:
             print(f"[CLIENT ERROR] Connection failed: {e}")
             return False
 
     def send_message(self, message):
-        """Sends a public text message to the server"""
-        if self.socket and self.running:
+        if self.running:
             msg_data = {'type': protocol.MSG_TEXT, 'payload': message}
-            try:
-                protocol.send_json(self.socket, msg_data)
-            except Exception as e:
-                print(f"[CLIENT ERROR] Send failed: {e}")
-                self.disconnect()
+            self.sio.emit('message', msg_data)
 
     def send_private(self, receiver, message):
-        """Sends a private message to a specific user"""
-        if self.socket and self.running:
+        if self.running:
             msg_data = {
                 'type': protocol.MSG_PRIVATE,
                 'payload': {'receiver': receiver, 'content': message}
             }
-            try:
-                protocol.send_json(self.socket, msg_data)
-            except Exception as e:
-                print(f"[CLIENT ERROR] Private send failed: {e}")
+            self.sio.emit('message', msg_data)
 
     def send_group(self, group_id, message):
-        """Sends a message to a group"""
-        if self.socket and self.running:
+        if self.running:
             msg_data = {
                 'type': protocol.MSG_GROUP,
                 'payload': {'group_id': group_id, 'content': message}
             }
-            try:
-                protocol.send_json(self.socket, msg_data)
-            except Exception as e:
-                print(f"[CLIENT ERROR] Group send failed: {e}")
+            self.sio.emit('message', msg_data)
 
     def create_group(self, group_name):
-        """Request to create a group"""
-        if self.socket and self.running:
-            try:
-                protocol.send_json(self.socket, {
-                    'type': protocol.MSG_GROUP_CREATE, 
-                    'payload': group_name
-                })
-            except Exception as e:
-                print(f"[CLIENT ERROR] Create group failed: {e}")
+        if self.running:
+            self.sio.emit('message', {
+                'type': protocol.MSG_GROUP_CREATE,
+                'payload': group_name
+            })
 
     def join_group(self, group_id):
-        """Request to join a group"""
-        if self.socket and self.running:
-            try:
-                protocol.send_json(self.socket, {
-                    'type': protocol.MSG_GROUP_JOIN, 
-                    'payload': group_id
-                })
-            except Exception as e:
-                print(f"[CLIENT ERROR] Join group failed: {e}")
+        if self.running:
+            self.sio.emit('message', {
+                'type': protocol.MSG_GROUP_JOIN,
+                'payload': group_id
+            })
 
     def leave_group(self, group_id):
-        """Request to leave a group"""
-        if self.socket and self.running:
-            try:
-                protocol.send_json(self.socket, {
-                    'type': protocol.MSG_GROUP_LEAVE, 
-                    'payload': group_id
-                })
-            except Exception as e:
-                print(f"[CLIENT ERROR] Leave group failed: {e}")
+        if self.running:
+            self.sio.emit('message', {
+                'type': protocol.MSG_GROUP_LEAVE,
+                'payload': group_id
+            })
 
-    def receive_loop(self):
-        """Background thread to receive messages"""
-        while self.running:
-            try:
-                message = protocol.receive_json(self.socket)
-                if message is None:
-                    break
-                
-                msg_type = message.get('type')
-                payload = message.get('payload')
-                
-                # Handle login/register responses
-                if self.waiting_for_login:
-                    if msg_type == 'LOGIN_SUCCESS':
-                        self.waiting_for_login = False
-                        if self.on_login_response:
-                            self.on_login_response(True, payload)
-                    elif msg_type == 'ERROR':
-                        self.waiting_for_login = False
-                        if self.on_login_response:
-                            self.on_login_response(False, payload)
-                        self.disconnect()
-                    elif msg_type == protocol.MSG_TEXT:
-                        if self.on_message_received:
-                            self.on_message_received(payload)
-                else:
-                    # Normal message handling
-                    if msg_type == protocol.MSG_TEXT:
-                        if self.on_message_received:
-                            self.on_message_received(payload)
-                    elif msg_type == protocol.MSG_PRIVATE:
-                        sender = payload.get('sender')
-                        content = payload.get('content')
-                        if self.on_message_received:
-                            self.on_message_received(f"[Private] {sender}: {content}", msg_type, sender)
-                    elif msg_type == protocol.MSG_GROUP:
-                        sender = payload.get('sender')
-                        group_id = payload.get('group_id')
-                        content = payload.get('content')
-                        if self.on_message_received:
-                            self.on_message_received(f"[Group {group_id}] {sender}: {content}", msg_type, group_id)
-                    elif msg_type == protocol.MSG_USERS_LIST:
-                        if self.on_users_list_received:
-                            self.on_users_list_received(payload)
-                    elif msg_type == protocol.MSG_GROUPS_LIST:
-                        if self.on_groups_list_received:
-                            self.on_groups_list_received(payload)
-                    elif msg_type in ['SUCCESS', 'ERROR']:
-                        if self.on_server_response:
-                            self.on_server_response(msg_type, payload)
-            except Exception as e:
-                print(f"[CLIENT ERROR] Receive error: {e}")
-                break
-        
-        self.disconnect()
+    def delete_group(self, group_id):
+        if self.running:
+            self.sio.emit('message', {
+                'type': 'GROUP_DELETE',
+                'payload': {'group_id': group_id}
+            })
 
     def disconnect(self):
-        """Closes the connection"""
-        self.running = False
-        if self.socket:
+        if self.running:
             try:
-                protocol.send_json(self.socket, {'type': protocol.MSG_EXIT, 'payload': ''})
+                self.sio.emit('message', {'type': protocol.MSG_EXIT, 'payload': ''})
             except:
                 pass
-            self.socket.close()
-            self.socket = None
-        if self.on_message_received:
-            self.on_message_received("Disconnected from server.")
+            self.sio.disconnect()
+            self.running = False
+            if self.on_message_received:
+                self.on_message_received("Disconnected from server.")
