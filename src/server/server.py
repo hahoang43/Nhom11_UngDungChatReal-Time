@@ -74,6 +74,11 @@ def handle_message(data):
     # Xử lý yêu cầu lấy danh sách nhóm từ client
     if msg_type == 'GROUPS_REQUEST':
         groups = db.get_all_groups()
+        # Convert datetime fields to string
+        for g in groups:
+            for k, v in g.items():
+                if hasattr(v, 'isoformat'):
+                    g[k] = v.isoformat()
         emit('message', {'type': protocol.MSG_GROUPS_LIST, 'payload': groups}, room=sid)
         return
 
@@ -364,6 +369,11 @@ def broadcast_users_list():
 
 def broadcast_groups_list():
     groups = db.get_all_groups()
+    # Convert datetime fields to string
+    for g in groups:
+        for k, v in g.items():
+            if hasattr(v, 'isoformat'):
+                g[k] = v.isoformat()
     emit('message', {
         'type': protocol.MSG_GROUPS_LIST,
         'payload': groups
