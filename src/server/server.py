@@ -66,15 +66,16 @@ def handle_disconnect():
 
 @socketio.on('message')
 def handle_message(data):
-        # Xử lý yêu cầu lấy danh sách nhóm từ client
-        if msg_type == 'GROUPS_REQUEST':
-            groups = db.get_all_groups()
-            emit('message', {'type': protocol.MSG_GROUPS_LIST, 'payload': groups}, room=sid)
-            return
     sid = request.sid
     print(f"[SERVER] Nhận message từ client: {data}", flush=True)
     msg_type = data.get('type')
     payload = data.get('payload')
+
+    # Xử lý yêu cầu lấy danh sách nhóm từ client
+    if msg_type == 'GROUPS_REQUEST':
+        groups = db.get_all_groups()
+        emit('message', {'type': protocol.MSG_GROUPS_LIST, 'payload': groups}, room=sid)
+        return
 
     if msg_type == protocol.MSG_REGISTER:
         username = payload.get('username')
