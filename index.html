@@ -859,8 +859,8 @@
                 div.className = `list-item ${isActive ? 'active' : ''}`;
                 
                 let actions = `
-                    <button class="action-btn btn-join ${isMember ? 'hidden' : ''}" onclick="joinGroup(${g.id}, '${g.name}')">Join</button>
-                    <button class="action-btn btn-leave ${isMember ? '' : 'hidden'}" onclick="leaveGroup(${g.id})">Leave</button>
+                    <button class="action-btn btn-join ${isMember ? 'hidden' : ''}" onclick="joinGroup(${g.id}, '${g.name}')">Tham gia</button>
+                    <button class="action-btn btn-leave ${isMember ? '' : 'hidden'}" onclick="leaveGroup(${g.id})">Rời nhóm</button>
                 `;
                 if (isCreator) {
                     actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
