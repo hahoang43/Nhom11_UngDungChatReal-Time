@@ -82,6 +82,13 @@ def handle_message(data):
             emit('message', {'type': 'ERROR', 'payload': 'Đăng ký thất bại. Vui lòng thử lại.'})
         return
 
+    # Lấy username cho các nhánh cần xác thực (sau LOGIN/REGISTER)
+    if msg_type not in [protocol.MSG_LOGIN, protocol.MSG_REGISTER]:
+        username = clients.get(sid)
+        if not username:
+            emit('message', {'type': 'ERROR', 'payload': 'Chưa đăng nhập hoặc phiên đăng nhập hết hạn'})
+            return
+
     if msg_type == protocol.MSG_LOGIN:
         username = payload.get('username')
         password = payload.get('password', 'default')
