@@ -330,6 +330,14 @@ def handle_message(data):
                 'payload': {'sender': username, 'mode': 'public'}
             }, broadcast=True, include_self=False)
 
+    elif msg_type == protocol.MSG_UPDATE_NAME:
+        new_name = payload.get('new_name')
+        if db.update_user_display_name(username, new_name):
+            emit('message', {'type': protocol.MSG_UPDATE_NAME_SUCCESS, 'payload': new_name})
+            broadcast_users_list()
+        else:
+            emit('message', {'type': 'ERROR', 'payload': "Failed to update name"})
+
 def format_file_size(size_bytes):
     if size_bytes < 1024:
         return f"{size_bytes} B"
@@ -361,10 +369,15 @@ def send_history(sid, username):
         }, room=sid)
 
 def broadcast_users_list():
-    online_users = list(set(clients.values()))
+    online_usernames = list(set(clients.values()))
+    payload = []
+    for u in online_usernames:
+        d_name = db.get_user_display_name(u)
+        payload.append({'username': u, 'display_name': d_name})
+        
     emit('message', {
         'type': protocol.MSG_USERS_LIST,
-        'payload': online_users
+        'payload': payload
     }, broadcast=True)
 
 def broadcast_groups_list():

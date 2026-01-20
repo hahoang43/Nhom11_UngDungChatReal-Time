@@ -131,6 +131,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS users (
                     username TEXT PRIMARY KEY,
                     password_hash TEXT NOT NULL,
+                    display_name TEXT,
                     created_at {datetime_def} DEFAULT CURRENT_TIMESTAMP,
                     last_login {datetime_def},
                     is_active INTEGER DEFAULT 1
@@ -207,6 +208,23 @@ class Database:
                      self.execute_query("ALTER TABLE messages ADD COLUMN receiver TEXT", cursor=cursor)
                      self.execute_query("ALTER TABLE messages ADD COLUMN message_type TEXT DEFAULT 'public'", cursor=cursor)
                      self.conn.commit()
+            
+            # Check display_name in users
+            if self.db_type == 'sqlite':
+                cursor.execute("PRAGMA table_info(users)")
+                cols = [r['name'] for r in cursor.fetchall()]
+                if 'display_name' not in cols:
+                    print("Migrating users table (add display_name)...")
+                    self.execute_query("ALTER TABLE users ADD COLUMN display_name TEXT", cursor=cursor)
+                    self.conn.commit()
+            else:
+                 cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='users'")
+                 cols = [row['column_name'] for row in cursor.fetchall()]
+                 if 'display_name' not in cols:
+                     print("Migrating users table (PG add display_name)...")
+                     self.execute_query("ALTER TABLE users ADD COLUMN display_name TEXT", cursor=cursor)
+                     self.conn.commit()
+
         except Exception as e:
             print(f"Migration check warning: {e}")
 
@@ -217,8 +235,8 @@ class Database:
         try:
             password_hash = self._hash_password(password)
             self.execute_query(
-                "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-                (username, password_hash)
+                "INSERT INTO users (username, password_hash, display_name) VALUES (?, ?, ?)",
+                (username, password_hash, username)
             )
             self.conn.commit()
             return True
@@ -243,6 +261,26 @@ class Database:
             self.conn.commit()
             return True
         return False
+
+    def update_user_display_name(self, username, new_name):
+        try:
+            self.execute_query(
+                "UPDATE users SET display_name = ? WHERE username = ?",
+                (new_name, username)
+            )
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Update name error: {e}")
+            self.conn.rollback()
+            return False
+
+    def get_user_display_name(self, username):
+        cursor = self.execute_query("SELECT display_name FROM users WHERE username = ?", (username,))
+        row = cursor.fetchone()
+        if row and row['display_name']:
+            return row['display_name']
+        return username
 
     def user_exists(self, username):
         cursor = self.execute_query("SELECT 1 FROM users WHERE username = ?", (username,))
@@ -403,8 +441,8 @@ class Database:
         return [row['username'] for row in cursor.fetchall()]
 
     def get_all_users(self):
-        cursor = self.execute_query("SELECT username FROM users WHERE is_active = 1")
-        return [row['username'] for row in cursor.fetchall()]
+        cursor = self.execute_query("SELECT username, display_name FROM users WHERE is_active = 1")
+        return [{'username': row['username'], 'display_name': row['display_name'] or row['username']} for row in cursor.fetchall()]
 
     def close(self):
         if self.conn:

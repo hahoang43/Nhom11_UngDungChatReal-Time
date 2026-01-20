@@ -24,6 +24,8 @@ MSG_FILE_END = "FILE_END"
 MSG_FILE = "FILE"
 MSG_TYPING = "TYPING"
 MSG_STOP_TYPING = "STOP_TYPING"
+MSG_UPDATE_NAME = "UPDATE_NAME"
+MSG_UPDATE_NAME_SUCCESS = "UPDATE_NAME_SUCCESS"
 
 def send_json(socket, data):
     """Helper to send JSON data with a fixed-length header"""
