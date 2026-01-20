@@ -77,6 +77,9 @@ class ChatClient:
                 elif msg_type in ['SUCCESS', 'ERROR']:
                     if self.on_server_response:
                         self.on_server_response(msg_type, payload)
+                elif msg_type == protocol.MSG_UPDATE_NAME_SUCCESS:
+                     if self.on_server_response:
+                        self.on_server_response('SUCCESS', f"Name updated to {payload}")
 
     def connect(self, username, password='default'):
         try:
@@ -155,6 +158,13 @@ class ChatClient:
             self.sio.emit('message', {
                 'type': 'GROUP_DELETE',
                 'payload': {'group_id': group_id}
+            })
+
+    def update_name(self, new_name):
+        if self.running:
+            self.sio.emit('message', {
+                'type': protocol.MSG_UPDATE_NAME,
+                'payload': {'new_name': new_name}
             })
 
     def disconnect(self):

@@ -176,7 +176,11 @@ class ChatGUI:
         # Sidebar Header
         sb_header = tk.Frame(self.sidebar, bg="#2196F3", height=50)
         sb_header.pack(fill=tk.X)
-        tk.Label(sb_header, text="Đang hoạt động", fg="white", bg="#2196F3", font=("Arial", 10, "bold")).pack(pady=15)
+        tk.Label(sb_header, text="Đang hoạt động", fg="white", bg="#2196F3", font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=10, pady=15)
+        
+        # Change Name Button
+        tk.Button(sb_header, text="✎", command=self.prompt_change_name, bg="#1976D2", fg="white", 
+                  relief=tk.FLAT, font=("Arial", 10)).pack(side=tk.RIGHT, padx=5, pady=10)
         
         # No public chat button
         
@@ -253,7 +257,14 @@ class ChatGUI:
     def on_user_select(self, event):
         selection = self.users_listbox.curselection()
         if selection:
-            username = self.users_listbox.get(selection[0])
+            display_str = self.users_listbox.get(selection[0])
+            # Extract username from "Display Name (username)"
+            # Assumes format ends with (username)
+            try:
+                username = display_str.split('(')[-1].strip(')')
+            except:
+                username = display_str
+                
             if username == self.client.username:
                 return # Can't chat with self
             self.select_target(f"User:{username}")
@@ -273,7 +284,13 @@ class ChatGUI:
     def _update_users_ui(self, users):
         self.users_listbox.delete(0, tk.END)
         for user in users:
-            self.users_listbox.insert(tk.END, user)
+            # user is dict {'username': ..., 'display_name': ...}
+            # Fallback if server sends old format (should not happen if restarted)
+            if isinstance(user, dict):
+                display = f"{user['display_name']} ({user['username']})"
+            else:
+                display = user
+            self.users_listbox.insert(tk.END, display)
 
     def update_groups_list(self, groups):
         self.root.after(0, self._update_groups_ui, groups)
@@ -321,6 +338,12 @@ class ChatGUI:
         group_name = simpledialog.askstring("Tạo nhóm", "Nhập tên nhóm mới:")
         if group_name:
             self.client.create_group(group_name)
+
+    def prompt_change_name(self):
+        from tkinter import simpledialog
+        new_name = simpledialog.askstring("Đổi tên hiển thị", "Nhập tên hiển thị mới:")
+        if new_name:
+            self.client.update_name(new_name)
 
     def handle_server_response(self, type, msg):
         self.root.after(0, lambda: messagebox.showinfo(type, msg))
