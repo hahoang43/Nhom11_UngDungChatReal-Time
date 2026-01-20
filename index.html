@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
+
     <style>
         :root {
             --primary: #6366f1;
@@ -56,9 +56,29 @@
             opacity: 0.6;
         }
 
-        .shape-1 { background: var(--primary); width: 400px; height: 400px; top: -100px; left: -100px; }
-        .shape-2 { background: var(--secondary); width: 300px; height: 300px; bottom: -50px; right: -50px; }
-        .shape-3 { background: var(--info); width: 250px; height: 250px; top: 40%; left: 60%; }
+        .shape-1 {
+            background: var(--primary);
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .shape-2 {
+            background: var(--secondary);
+            width: 300px;
+            height: 300px;
+            bottom: -50px;
+            right: -50px;
+        }
+
+        .shape-3 {
+            background: var(--info);
+            width: 250px;
+            height: 250px;
+            top: 40%;
+            left: 60%;
+        }
 
         /* Auth Container */
         .auth-container {
@@ -97,13 +117,15 @@
         .chat-container {
             width: 95vw;
             max-width: 1200px;
-            height: 90vh; /* Chỉnh lại chút cho cân đối */
+            height: 90vh;
+            /* Chỉnh lại chút cho cân đối */
             background: var(--glass-strong);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
-            display: none; /* Flex when active */
+            display: none;
+            /* Flex when active */
             box-shadow: var(--shadow);
             overflow: hidden;
             z-index: 10;
@@ -166,7 +188,9 @@
             transition: bg 0.2s;
         }
 
-        .btn-icon-small:hover { background: rgba(99, 102, 241, 0.1); }
+        .btn-icon-small:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
 
         .list-container {
             flex: 1;
@@ -200,11 +224,27 @@
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
-        .list-item.active .status-dot { background: #4ade80; border-color: var(--primary); }
-        .list-item.active .item-actions button { color: white; opacity: 0.9; }
+        .list-item.active .status-dot {
+            background: #4ade80;
+            border-color: var(--primary);
+        }
 
-        .item-info { display: flex; align-items: center; gap: 12px; flex: 1; }
-        .item-actions { display: flex; gap: 5px; }
+        .list-item.active .item-actions button {
+            color: white;
+            opacity: 0.9;
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
 
         .action-btn {
             padding: 4px 8px;
@@ -215,11 +255,30 @@
             font-weight: 600;
         }
 
-        .btn-join { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-        .btn-join:hover { background: var(--success); color: white; }
-        .btn-leave { background: rgba(239, 68, 68, 0.1); color: var(--danger); visibility: hidden; }
-        .list-item:hover .btn-leave { visibility: visible; }
-        .btn-leave:hover { background: var(--danger); color: white; }
+        .btn-join {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .btn-join:hover {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-leave {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            visibility: hidden;
+        }
+
+        .list-item:hover .btn-leave {
+            visibility: visible;
+        }
+
+        .btn-leave:hover {
+            background: var(--danger);
+            color: white;
+        }
 
         /* --- CHAT MAIN AREA (FIXED LAYOUT) --- */
         .chat-main {
@@ -227,13 +286,15 @@
             background: rgba(255, 255, 255, 0.4);
             position: relative;
             height: 100%;
-            display: flex; /* Quan trọng */
+            display: flex;
+            /* Quan trọng */
             flex-direction: column;
         }
 
         /* Container của nội dung chat */
         #chatMainContent {
-            display: flex; /* Flex cột */
+            display: flex;
+            /* Flex cột */
             flex-direction: column;
             height: 100%;
             width: 100%;
@@ -251,8 +312,16 @@
             z-index: 5;
         }
 
-        .chat-title h2 { font-size: 1.1rem; color: var(--dark); margin-bottom: 2px; }
-        .chat-subtitle { font-size: 0.85rem; color: #64748b; }
+        .chat-title h2 {
+            font-size: 1.1rem;
+            color: var(--dark);
+            margin-bottom: 2px;
+        }
+
+        .chat-subtitle {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
 
         /* Vùng tin nhắn: Tự giãn (flex: 1) và scroll */
         .messages-area {
@@ -277,19 +346,54 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .message.received { background: white; border-bottom-left-radius: 4px; align-self: flex-start; }
-        .message.sent { background: var(--primary); color: white; border-bottom-right-radius: 4px; align-self: flex-end; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); }
+        .message.received {
+            background: white;
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+        }
+
+        .message.sent {
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
         .message.system {
-            align-self: center; background: rgba(0, 0, 0, 0.05); color: #64748b;
-            border-radius: 20px; font-size: 0.8rem; padding: 5px 15px; max-width: 90%; box-shadow: none;
+            align-self: center;
+            background: rgba(0, 0, 0, 0.05);
+            color: #64748b;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            padding: 5px 15px;
+            max-width: 90%;
+            box-shadow: none;
         }
 
-        .msg-sender { font-size: 0.75rem; margin-bottom: 4px; opacity: 0.7; font-weight: 600; color: var(--primary); }
-        .sent .msg-sender { color: rgba(255, 255, 255, 0.8); text-align: right; }
+        .msg-sender {
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+            opacity: 0.7;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .sent .msg-sender {
+            color: rgba(255, 255, 255, 0.8);
+            text-align: right;
+        }
 
         /* Vùng nhập liệu: Cố định dưới đáy container */
         .input-area {
@@ -314,19 +418,36 @@
             font-size: 0.95rem;
         }
 
-        .chat-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+        .chat-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
 
         .send-btn {
-            background: var(--primary); color: white; border: none;
-            width: 45px; height: 45px; border-radius: 12px; cursor: pointer;
-            transition: all 0.2s; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
         }
-        .send-btn:hover { background: var(--primary-dark); transform: scale(1.05); }
+
+        .send-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
 
         /* Emoji Picker */
         .emoji-picker {
             position: absolute;
-            bottom: 100%; /* Hiển thị phía trên input area */
+            bottom: 100%;
+            /* Hiển thị phía trên input area */
             left: 30px;
             margin-bottom: 10px;
             width: 300px;
@@ -341,59 +462,266 @@
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
             z-index: 100;
         }
-        .emoji-picker span { font-size: 1.2rem; cursor: pointer; padding: 4px; border-radius: 4px; text-align: center; transition: bg 0.2s; }
-        .emoji-picker span:hover { background: #f1f5f9; }
+
+        .emoji-picker span {
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            text-align: center;
+            transition: bg 0.2s;
+        }
+
+        .emoji-picker span:hover {
+            background: #f1f5f9;
+        }
 
         /* Generic UI */
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; width: 100%; cursor: pointer; transition: all 0.2s; font-size: 1rem; }
-        .btn-primary:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transform: translateY(-1px); }
-        
-        .input-group { margin-bottom: 20px; text-align: left; }
-        .input-group input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.95rem; outline: none; transition: all 0.2s; background: rgba(255, 255, 255, 0.8); }
-        .input-group input:focus { border-color: var(--primary); background: white; }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
 
-        .tabs { display: flex; background: rgba(0, 0, 0, 0.05); padding: 5px; border-radius: 12px; margin-bottom: 25px; }
-        .tab { flex: 1; padding: 10px; border: none; background: transparent; cursor: pointer; border-radius: 8px; font-weight: 600; color: #64748b; transition: all 0.2s; }
-        .tab.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
-        
-        .hidden { display: none !important; }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 5px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .hidden {
+            display: none !important;
+        }
 
         /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
 
         /* Media Previews */
-        .media-preview { max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 5px; display: block; cursor: pointer; transition: transform 0.2s; }
-        .media-preview:hover { transform: scale(1.02); }
+        .media-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 5px;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .media-preview:hover {
+            transform: scale(1.02);
+        }
 
         /* Toast & Typing */
-        #toast { visibility: hidden; min-width: 250px; background-color: var(--dark); color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; z-index: 100; left: 50%; bottom: 30px; transform: translateX(-50%); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
-        @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: var(--dark);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
 
-        .typing-indicator { font-size: 0.75rem; color: #64748b; margin-left: 10px; font-style: italic; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
 
-        .back-btn { display: none; margin-right: 10px; background: none; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer; padding: 5px; border-radius: 50%; }
-        .back-btn:hover { background: rgba(0, 0, 0, 0.05); }
+        @keyframes fadein {
+            from {
+                bottom: 0;
+                opacity: 0;
+            }
+
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeout {
+            from {
+                bottom: 30px;
+                opacity: 1;
+            }
+
+            to {
+                bottom: 0;
+                opacity: 0;
+            }
+        }
+
+        .typing-indicator {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-left: 10px;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        .back-btn {
+            display: none;
+            margin-right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--primary);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
 
         /* --- MOBILE RESPONSIVE --- */
         @media (max-width: 768px) {
-            body { overflow: hidden; }
-            .chat-container { width: 100%; height: 100vh; border-radius: 0; max-width: none; flex-direction: row; }
-            .sidebar { width: 100%; border-right: none; z-index: 20; }
-            .chat-main { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); z-index: 30; }
-            
-            .mobile-show-chat .sidebar { display: none; }
-            .mobile-show-chat .chat-main { display: flex; } /* Hiện dưới dạng Flex */
-            
-            .back-btn { display: inline-flex !important; }
-            .input-area { padding: 10px 15px; }
-            .chat-input { border-radius: 20px; }
-            .send-btn { width: 40px; height: 40px; border-radius: 50%; }
+            body {
+                overflow: hidden;
+            }
+
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                max-width: none;
+                flex-direction: row;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                z-index: 20;
+            }
+
+            .chat-main {
+                display: none;
+                width: 100%;
+                height: 100vh;
+                position: absolute;
+                top: 0;
+                left: 0;
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                z-index: 30;
+            }
+
+            .mobile-show-chat .sidebar {
+                display: none;
+            }
+
+            .mobile-show-chat .chat-main {
+                display: flex;
+            }
+
+            /* Hiện dưới dạng Flex */
+
+            .back-btn {
+                display: inline-flex !important;
+            }
+
+            .input-area {
+                padding: 10px 15px;
+            }
+
+            .chat-input {
+                border-radius: 20px;
+            }
+
+            .send-btn {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+            }
         }
     </style>
 </head>
@@ -432,7 +760,8 @@
                 <input type="password" id="regPass" placeholder="Mật khẩu" onkeypress="handleEnter(event, 'REGISTER')">
             </div>
             <div class="input-group">
-                <input type="password" id="regConfirm" placeholder="Xác nhận mật khẩu" onkeypress="handleEnter(event, 'REGISTER')">
+                <input type="password" id="regConfirm" placeholder="Xác nhận mật khẩu"
+                    onkeypress="handleEnter(event, 'REGISTER')">
             </div>
             <button onclick="handleAuth('REGISTER')" class="btn-primary">
                 <i class="fa-solid fa-user-plus"></i> Đăng Ký
@@ -448,11 +777,15 @@
                 <div class="avatar" id="myAvatar">U</div>
                 <div style="flex: 1;">
                     <h3 style="font-size: 1rem" id="myNameDisplay">User</h3>
-                    <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--success); font-weight: 500;">
+                    <div
+                        style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--success); font-weight: 500;">
                         <span style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></span>
                         Online
                     </div>
                 </div>
+                <button class="btn-icon-small" title="Đổi tên" onclick="promptChangeName()" style="color: var(--info);">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
                 <button class="btn-icon-small" title="Đăng xuất" onclick="logout()" style="color: var(--danger);">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
@@ -474,7 +807,8 @@
         </div>
 
         <div class="chat-main">
-            <div id="welcomeScreen" style="height: 100%; display: flex; align-items: center; justify-content: center; color: #64748b; flex-direction: column;">
+            <div id="welcomeScreen"
+                style="height: 100%; display: flex; align-items: center; justify-content: center; color: #64748b; flex-direction: column;">
                 <i class="fa-brands fa-rocketchat" style="font-size: 4rem; opacity: 0.2; margin-bottom: 20px;"></i>
                 <p>Chọn một đoạn chat để bắt đầu</p>
             </div>
@@ -492,7 +826,8 @@
                     <div id="typingIndicator" class="typing-indicator hidden">Đang nhập...</div>
                 </div>
 
-                <audio id="notifySound" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
+                <audio id="notifySound"
+                    src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
 
                 <div class="messages-area" id="messages">
                     <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
@@ -501,17 +836,20 @@
                 <div class="input-area">
                     <div id="emojiPicker" class="emoji-picker hidden"></div>
                     <input type="file" id="fileInput" style="display:none" />
-                    
-                    <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;" onclick="document.getElementById('fileInput').click()">
+
+                    <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;"
+                        onclick="document.getElementById('fileInput').click()">
                         <i class="fa-solid fa-paperclip"></i>
                     </button>
-                    
-                    <button class="btn-icon-small" id="emojiBtn" title="Emoji" style="font-size: 1.2rem; color: #fbbf24;" onclick="toggleEmojiPicker()">
+
+                    <button class="btn-icon-small" id="emojiBtn" title="Emoji"
+                        style="font-size: 1.2rem; color: #fbbf24;" onclick="toggleEmojiPicker()">
                         <i class="fa-solid fa-face-smile"></i>
                     </button>
-                    
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." autocomplete="off">
-                    
+
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..."
+                        autocomplete="off">
+
                     <button class="send-btn" id="sendBtn" onclick="sendMessage()">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
@@ -528,7 +866,7 @@
         let socket = null;
 
         let myName = "";
-        let currentTarget = null; 
+        let currentTarget = null;
         let myGroups = new Set();
         let typingTimeout = null;
         const CHUNK_SIZE = 4096;
@@ -597,7 +935,7 @@
                     if (mode && targetVal) {
                         sendJson('TYPING', { mode: mode, target: targetVal });
                     }
-                    
+
                     typingTimeout = setTimeout(() => {
                         stopTypingEvent();
                     }, 2000);
@@ -749,7 +1087,7 @@
                     const fileUrl = `${SERVER_URL}/download?filename=${encodeURIComponent(file.filename)}`;
                     let fileMsg = "";
                     const ext = file.filename.split('.').pop().toLowerCase();
-                    
+
                     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
                         fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><img src="${fileUrl}" class="media-preview" onclick="window.open('${fileUrl}', '_blank')">`;
                     } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
@@ -771,6 +1109,11 @@
                 case 'STOP_TYPING':
                     handleTyping(data.payload, false);
                     break;
+                case 'UPDATE_NAME_SUCCESS':
+                    const newName = data.payload;
+                    document.getElementById('myNameDisplay').textContent = newName;
+                    showToast('Đã đổi tên thành công: ' + newName);
+                    break;
                 case 'USERS_LIST':
                     renderUsers(data.payload);
                     break;
@@ -784,7 +1127,7 @@
             const audio = document.getElementById('notifySound');
             if (audio) {
                 audio.currentTime = 0;
-                audio.play().catch(e => {});
+                audio.play().catch(e => { });
             }
         }
 
@@ -803,6 +1146,13 @@
                 indicator.classList.remove('hidden');
             } else {
                 indicator.classList.add('hidden');
+            }
+        }
+
+        function promptChangeName() {
+            const newName = prompt("Nhập tên hiển thị mới:");
+            if (newName && newName.trim()) {
+                sendJson('UPDATE_NAME', { new_name: newName.trim() });
             }
         }
 
@@ -833,17 +1183,20 @@
             const container = document.getElementById('usersList');
             container.innerHTML = '';
             users.forEach(u => {
-                if (u === myName) return;
+                const username = typeof u === 'string' ? u : u.username;
+                const displayName = typeof u === 'string' ? u : u.display_name;
+
+                if (username === myName) return;
                 const div = document.createElement('div');
-                div.className = `list-item ${currentTarget === `User:${u}` ? 'active' : ''}`;
+                div.className = `list-item ${currentTarget === `User:${username}` ? 'active' : ''}`;
                 div.innerHTML = `
                     <div class="item-info">
-                        <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: #e2e8f0; color: #64748b;">${u.charAt(0).toUpperCase()}</div>
-                        <span>${u}</span>
+                        <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: #e2e8f0; color: #64748b;">${(displayName || username).charAt(0).toUpperCase()}</div>
+                        <span>${displayName || username}</span>
                     </div>
                     <span class="status-dot" style="width: 8px; height: 8px; background: #4ade80; border-radius: 50%;"></span>
                 `;
-                div.onclick = () => setTarget('User', u, u);
+                div.onclick = () => setTarget('User', username, displayName || username);
                 container.appendChild(div);
             });
         }
@@ -857,7 +1210,7 @@
                 const isCreator = g.creator === myName;
                 const div = document.createElement('div');
                 div.className = `list-item ${isActive ? 'active' : ''}`;
-                
+
                 let actions = `
                     <button class="action-btn btn-join ${isMember ? 'hidden' : ''}" onclick="joinGroup(${g.id}, '${g.name}')">Tham gia</button>
                     <button class="action-btn btn-leave ${isMember ? '' : 'hidden'}" onclick="leaveGroup(${g.id})">Rời nhóm</button>
@@ -865,7 +1218,7 @@
                 if (isCreator) {
                     actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
                 }
-                
+
                 div.innerHTML = `
                     <div class="item-info" ${isMember ? `onclick=\"setTarget('Group', '${g.id}', '${g.name}')\"` : ''} style="${isMember ? '' : 'cursor:not-allowed;opacity:0.7;'}">
                         <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: var(--secondary);">
@@ -911,7 +1264,7 @@
         // --- Chat Navigation ---
         function setTarget(type, id, name) {
             currentTarget = `${type}:${id}`;
-            
+
             // Switch view
             document.getElementById('welcomeScreen').style.display = 'none';
             document.getElementById('chatMainContent').style.display = 'flex'; // Must be flex
@@ -937,11 +1290,11 @@
             }
 
             document.getElementById('messages').innerHTML = '';
-            
+
             // Fetch History
             if (type === 'User') sendJson('HISTORY_REQUEST', { history_type: 'private', target: id });
             else if (type === 'Group') sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
-            
+
             appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
 
             if (window.innerWidth <= 768) {
@@ -1027,4 +1380,5 @@
         }
     </script>
 </body>
+
 </html>
