@@ -280,22 +280,159 @@
             color: white;
         }
 
-        /* --- CHAT MAIN AREA (FIXED LAYOUT) --- */
+        /* --- CHAT MAIN AREA (FLEX ROW) --- */
         .chat-main {
             flex: 1 1 0%;
             background: rgba(255, 255, 255, 0.4);
             position: relative;
             height: 100%;
             display: flex;
-            /* Quan trọng */
+            flex-direction: row;
+            /* Main layout is row */
+            overflow: hidden;
+            /* Prevent overflow */
+        }
+
+        /* Vùng chat chính (giữa) */
+        .chat-primary-area {
+            flex: 1;
+            display: flex;
             flex-direction: column;
+            height: 100%;
+            min-width: 0;
+            /* Important for flex items to shrink */
+            transition: all 0.3s ease;
+            /* Smooth resize */
+        }
+
+        /* Vùng thông tin bên phải (Members) */
+        .chat-info-sidebar {
+            width: 0;
+            /* Default hidden width */
+            background: rgba(255, 255, 255, 0.8);
+            border-left: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Hide content when width is 0 */
+            transition: width 0.3s ease;
+            /* Smooth width transition */
+            opacity: 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-info-sidebar.active {
+            width: 300px;
+            /* Expanded width */
+            opacity: 1;
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .info-header {
+            padding: 20px;
+            font-weight: 700;
+            color: var(--dark);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 300px;
+            /* Prevent text wrap during anim */
+        }
+
+        .members-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            /* width: 300px; - Removed fixed width to allow flex sizing if needed */
+        }
+
+        /* Accordion Styles */
+        .accordion-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #334155;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .accordion-header:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .accordion-content {
+            display: none;
+            /* Hidden by default or toggled */
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .accordion-content.open {
+            display: block;
+        }
+
+        .accordion-arrow {
+            transition: transform 0.3s ease;
+        }
+
+
+
+        .accordion-header.active .accordion-arrow {
+            transform: rotate(180deg);
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            transition: background 0.2s;
+        }
+
+        .member-item:hover {
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .member-item .avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+        }
+
+        .member-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .member-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px #e2e8f0;
+        }
+
+        .member-status.online {
+            background: var(--success);
+            box-shadow: 0 0 0 1px var(--success);
         }
 
         /* Container của nội dung chat */
         #chatMainContent {
             display: flex;
             /* Flex cột */
-            flex-direction: column;
+            flex-direction: row;
             height: 100%;
             width: 100%;
         }
@@ -545,6 +682,44 @@
 
         .hidden {
             display: none !important;
+        }
+
+        /* Welcome Screen Styling */
+        #welcomeScreen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #64748b;
+            background: white;
+            height: 100%;
+        }
+
+        #welcomeScreen i {
+            font-size: 5rem;
+            color: #e2e8f0;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        #welcomeScreen h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         /* Scrollbar */
@@ -924,6 +1099,11 @@
             <!-- DISCOVER VIEW (Online Users) -->
             <div id="viewDiscover" class="list-container hidden">
                 <div class="section-title">
+                    Nhóm mới
+                </div>
+                <div id="groupsConnectList"></div>
+
+                <div class="section-title" style="margin-top: 20px;">
                     Người dùng Online
                 </div>
                 <div id="usersList"></div>
@@ -938,527 +1118,562 @@
 
         </div>
 
-        <div class="chat-main">
-            <div id="welcomeScreen"
-                style="height: 100%; display: flex; align-items: center; justify-content: center; color: #64748b; flex-direction: column;">
-                <i class="fa-brands fa-rocketchat" style="font-size: 4rem; opacity: 0.2; margin-bottom: 20px;"></i>
-                <p>Chọn một đoạn chat để bắt đầu</p>
+        <div class="chat-main" id="chatPanelMain">
+            <!-- Welcome Screen (Default) -->
+            <div id="welcomeScreen">
+                <i class="fa-regular fa-comments"></i>
+                <h3>Chọn một đoạn chat để bắt đầu</h3>
             </div>
 
             <div id="chatMainContent" style="display:none">
-                <div class="chat-header">
-                    <button class="back-btn" onclick="backToSidebar()">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <div class="avatar" style="background: var(--info);" id="targetAvatar"></div>
-                    <div class="chat-title">
-                        <h2 id="targetName"></h2>
-                        <div class="chat-subtitle" id="targetStatus"></div>
+                <!-- Primary Chat Area -->
+                <div class="chat-primary-area">
+                    <div class="chat-header">
+                        <button class="back-btn" onclick="backToSidebar()">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div class="avatar" style="background: var(--info);" id="targetAvatar"></div>
+                        <div class="chat-title">
+                            <h2 id="targetName"></h2>
+                            <div class="chat-subtitle" id="targetStatus"></div>
+                        </div>
+
+                        <!-- Actions Container -->
+                        <div style="margin-left: auto; display: flex; gap: 10px;">
+                            <button id="btnCreateGroupFromChat" class="btn-icon-small hidden" style="font-size: 1.2rem;"
+                                title="Tạo nhóm với người này" onclick="openCreateGroupModal()">
+                                <i class="fa-solid fa-users-viewfinder"></i>
+                            </button>
+                            <button id="btnToggleInfo" class="btn-icon-small hidden" title="Thông tin hội thoại"
+                                style="font-size: 1.2rem; background: rgba(0,0,0,0.05);" onclick="toggleChatInfo()">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
+                        </div>
+
+                        <div id="typingIndicator" class="typing-indicator hidden">Đang nhập...</div>
                     </div>
-                    <button id="btnCreateGroupFromChat" class="btn-icon-small hidden"
-                        style="margin-left: auto; color: var(--primary); font-size: 1.2rem;"
-                        title="Tạo nhóm với người này" onclick="openCreateGroupModal()">
-                        <i class="fa-solid fa-users-viewfinder"></i>
-                    </button>
-                    <div id="typingIndicator" class="typing-indicator hidden">Đang nhập...</div>
+
+                    <audio id="notifySound"
+                        src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
+
+                    <div class="messages-area" id="messages">
+                        <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
+                    </div>
+
+                    <div class="input-area">
+                        <div id="emojiPicker" class="emoji-picker hidden"></div>
+                        <input type="file" id="fileInput" style="display:none" />
+
+                        <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;"
+                            onclick="document.getElementById('fileInput').click()">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
+
+                        <button class="btn-icon-small" id="emojiBtn" title="Emoji"
+                            style="font-size: 1.2rem; color: #fbbf24;" onclick="toggleEmojiPicker()">
+                            <i class="fa-solid fa-face-smile"></i>
+                        </button>
+
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..."
+                            autocomplete="off">
+
+                        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <audio id="notifySound"
-                    src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
+                <!-- Right Sidebar (Group Members) -->
+                <div class="chat-info-sidebar" id="chatInfoSidebar">
+                    <div class="info-header">
+                        <span><i class="fa-solid fa-circle-info"></i> Thông tin hội thoại</span>
+                        <button class="btn-icon-small" onclick="toggleChatInfo()"><i
+                                class="fa-solid fa-xmark"></i></button>
+                    </div>
 
-                <div class="messages-area" id="messages">
-                    <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
-                </div>
-
-                <div class="input-area">
-                    <div id="emojiPicker" class="emoji-picker hidden"></div>
-                    <input type="file" id="fileInput" style="display:none" />
-
-                    <button class="btn-icon-small" title="Gửi File" style="font-size: 1.2rem; color: #6366f1;"
-                        onclick="document.getElementById('fileInput').click()">
-                        <i class="fa-solid fa-paperclip"></i>
-                    </button>
-
-                    <button class="btn-icon-small" id="emojiBtn" title="Emoji"
-                        style="font-size: 1.2rem; color: #fbbf24;" onclick="toggleEmojiPicker()">
-                        <i class="fa-solid fa-face-smile"></i>
-                    </button>
-
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..."
-                        autocomplete="off">
-
-                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
+                    <!-- Accordion Item: Members -->
+                    <div>
+                        <div class="accordion-header" onclick="toggleAccordion('membersAccordion', this)">
+                            <span><i class="fa-solid fa-users"></i> Xem thành viên</span>
+                            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+                        </div>
+                        <div id="membersAccordion" class="accordion-content">
+                            <div class="members-list" id="groupMembersList" style="padding:0; min-width:0;">
+                                <!-- Members will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div id="createGroupModal" class="modal hidden">
-        <div class="modal-content">
-            <h3>Tạo nhóm với bạn bè</h3>
-            <div class="input-group">
-                <input type="text" id="newGroupNameFromChat" placeholder="Tên nhóm..." />
-            </div>
-            <div style="font-size:0.9rem; margin-bottom:5px; font-weight:500;">Chọn thành viên:</div>
-            <div id="selectFriendsList"></div>
-            <div style="font-size:0.8rem; color:#64748b; margin-top:5px;">
-                * Cần tối thiểu 3 thành viên (bao gồm bạn).
-            </div>
-            <div class="modal-actions">
-                <button onclick="document.getElementById('createGroupModal').classList.add('hidden')">Hủy</button>
-                <button onclick="submitCreateGroupFromChat()">Tạo nhóm</button>
+        <div id="createGroupModal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Tạo nhóm với bạn bè</h3>
+                <div class="input-group">
+                    <input type="text" id="newGroupNameFromChat" placeholder="Tên nhóm..." />
+                </div>
+                <div style="font-size:0.9rem; margin-bottom:5px; font-weight:500;">Chọn thành viên:</div>
+                <div id="selectFriendsList"></div>
+                <div style="font-size:0.8rem; color:#64748b; margin-top:5px;">
+                    * Cần tối thiểu 3 thành viên (bao gồm bạn).
+                </div>
+                <div class="modal-actions">
+                    <button onclick="document.getElementById('createGroupModal').classList.add('hidden')">Hủy</button>
+                    <button onclick="submitCreateGroupFromChat()">Tạo nhóm</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="toast">Thông báo</div>
+        <div id="toast">Thông báo</div>
 
-    <script>
-        // --- CẤU HÌNH SERVER ---
-        const SERVER_URL = "https://nhom11-ungdungchatreal-time.onrender.com/";
-        let socket = null;
+        <script>
+            // --- CẤU HÌNH SERVER ---
+            const SERVER_URL = "https://nhom11-ungdungchatreal-time.onrender.com/";
+            let socket = null;
 
-        let myName = "";
-        let currentTarget = null;
-        let myGroups = new Set();
-        let myFriends = new Set();
-        let mySentRequests = new Set();
-        let myReceivedRequests = new Set();
-        let unreadCounts = {};
-        let lastUsersList = [];
-        let typingTimeout = null;
-        const CHUNK_SIZE = 4096;
+            let myName = "";
+            let currentTarget = null;
+            let myGroups = new Set();
+            let myFriends = new Set();
+            let mySentRequests = new Set();
+            let myReceivedRequests = new Set();
+            let unreadCounts = {};
+            let lastUsersList = [];
+            let typingTimeout = null;
+            const CHUNK_SIZE = 4096;
 
-        // --- Init Listeners ---
-        window.addEventListener('DOMContentLoaded', function () {
-            // File Input
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput) {
-                fileInput.addEventListener('change', async function (e) {
-                    const file = e.target.files[0];
-                    if (!file || !socket || !socket.connected) return;
-                    sendJson('FILE_REQUEST', {
-                        filename: file.name,
-                        filesize: file.size,
-                        receiver: null
-                    });
-                    let chunkNum = 0;
-                    const reader = new FileReader();
-                    let offset = 0;
-                    function sendChunk() {
-                        const slice = file.slice(offset, offset + CHUNK_SIZE);
-                        reader.readAsArrayBuffer(slice);
-                    }
-                    reader.onload = function (ev) {
-                        const chunk = new Uint8Array(ev.target.result);
-                        const chunk_b64 = btoa(String.fromCharCode.apply(null, chunk));
-                        sendJson('FILE_CHUNK', {
-                            chunk_num: chunkNum,
-                            data: chunk_b64
+            // --- Init Listeners ---
+            window.addEventListener('DOMContentLoaded', function () {
+                // File Input
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) {
+                    fileInput.addEventListener('change', async function (e) {
+                        const file = e.target.files[0];
+                        if (!file || !socket || !socket.connected) return;
+                        sendJson('FILE_REQUEST', {
+                            filename: file.name,
+                            filesize: file.size,
+                            receiver: null
                         });
-                        offset += CHUNK_SIZE;
-                        chunkNum++;
-                        if (offset < file.size) {
-                            sendChunk();
-                        } else {
-                            sendJson('FILE_END', {});
-                            showToast('Đã gửi file: ' + file.name);
+                        let chunkNum = 0;
+                        const reader = new FileReader();
+                        let offset = 0;
+                        function sendChunk() {
+                            const slice = file.slice(offset, offset + CHUNK_SIZE);
+                            reader.readAsArrayBuffer(slice);
                         }
+                        reader.onload = function (ev) {
+                            const chunk = new Uint8Array(ev.target.result);
+                            const chunk_b64 = btoa(String.fromCharCode.apply(null, chunk));
+                            sendJson('FILE_CHUNK', {
+                                chunk_num: chunkNum,
+                                data: chunk_b64
+                            });
+                            offset += CHUNK_SIZE;
+                            chunkNum++;
+                            if (offset < file.size) {
+                                sendChunk();
+                            } else {
+                                sendJson('FILE_END', {});
+                                showToast('Đã gửi file: ' + file.name);
+                            }
+                        };
+                        sendChunk();
+                    });
+                }
+
+                // Chat Input (Typing + Enter)
+                const chatInput = document.getElementById('chatInput');
+                if (chatInput) {
+                    chatInput.onkeypress = (e) => {
+                        if (e.key === 'Enter') sendMessage();
                     };
-                    sendChunk();
-                });
+                    chatInput.addEventListener('input', function () {
+                        if (typingTimeout) clearTimeout(typingTimeout);
+                        if (!currentTarget) return;
+
+                        let targetVal = null;
+                        let mode = null;
+
+                        if (currentTarget.startsWith('User:')) {
+                            mode = 'private';
+                            targetVal = currentTarget.split(':')[1];
+                        } else if (currentTarget.startsWith('Group:')) {
+                            mode = 'group';
+                            targetVal = parseInt(currentTarget.split(':')[1]);
+                        }
+
+                        if (mode && targetVal) {
+                            sendJson('TYPING', { mode: mode, target: targetVal });
+                        }
+
+                        typingTimeout = setTimeout(() => {
+                            stopTypingEvent();
+                        }, 2000);
+                    });
+                }
+
+                // Auto Login Check
+                const savedUser = localStorage.getItem('chat_username');
+                const savedPass = localStorage.getItem('chat_password');
+                if (savedUser) document.getElementById('loginUser').value = savedUser;
+                if (savedPass) document.getElementById('loginPass').value = savedPass;
+                if (savedUser && savedPass) handleAuth('LOGIN', true);
+            });
+
+            // --- Auth UI Logic ---
+            function switchAuth(mode) {
+                const loginForm = document.getElementById('loginForm');
+                const regForm = document.getElementById('registerForm');
+                const tabLogin = document.getElementById('tabLogin');
+                const tabReg = document.getElementById('tabRegister');
+                const title = document.querySelector('.auth-title');
+
+                if (mode === 'login') {
+                    loginForm.classList.remove('hidden');
+                    regForm.classList.add('hidden');
+                    tabLogin.classList.add('active');
+                    tabReg.classList.remove('active');
+                    title.textContent = "Chào mừng trở lại";
+                } else {
+                    loginForm.classList.add('hidden');
+                    regForm.classList.remove('hidden');
+                    tabLogin.classList.remove('active');
+                    tabReg.classList.add('active');
+                    title.textContent = "Tạo tài khoản mới";
+                }
+                document.getElementById('authError').textContent = "";
             }
 
-            // Chat Input (Typing + Enter)
-            const chatInput = document.getElementById('chatInput');
-            if (chatInput) {
-                chatInput.onkeypress = (e) => {
-                    if (e.key === 'Enter') sendMessage();
-                };
-                chatInput.addEventListener('input', function () {
-                    if (typingTimeout) clearTimeout(typingTimeout);
-                    if (!currentTarget) return;
+            function handleEnter(e, type) {
+                if (e.key === 'Enter') handleAuth(type);
+            }
 
-                    let targetVal = null;
-                    let mode = null;
+            function showToast(msg) {
+                const el = document.getElementById('toast');
+                el.textContent = msg;
+                el.className = "show";
+                setTimeout(() => { el.className = el.className.replace("show", ""); }, 3000);
+            }
 
-                    if (currentTarget.startsWith('User:')) {
-                        mode = 'private';
-                        targetVal = currentTarget.split(':')[1];
-                    } else if (currentTarget.startsWith('Group:')) {
-                        mode = 'group';
-                        targetVal = parseInt(currentTarget.split(':')[1]);
+            // --- Socket.IO & Auth Logic ---
+            function handleAuth(type, autoLogin = false) {
+                const userIn = type === 'LOGIN' ? document.getElementById('loginUser') : document.getElementById('regUser');
+                const passIn = type === 'LOGIN' ? document.getElementById('loginPass') : document.getElementById('regPass');
+                const username = userIn.value.trim();
+                const password = passIn.value.trim();
+
+                if (type === 'REGISTER') {
+                    const conf = document.getElementById('regConfirm').value.trim();
+                    if (password !== conf) {
+                        document.getElementById('authError').textContent = "Mật khẩu không khớp!";
+                        return;
                     }
+                }
 
-                    if (mode && targetVal) {
-                        sendJson('TYPING', { mode: mode, target: targetVal });
-                    }
-
-                    typingTimeout = setTimeout(() => {
-                        stopTypingEvent();
-                    }, 2000);
-                });
-            }
-
-            // Auto Login Check
-            const savedUser = localStorage.getItem('chat_username');
-            const savedPass = localStorage.getItem('chat_password');
-            if (savedUser) document.getElementById('loginUser').value = savedUser;
-            if (savedPass) document.getElementById('loginPass').value = savedPass;
-            if (savedUser && savedPass) handleAuth('LOGIN', true);
-        });
-
-        // --- Auth UI Logic ---
-        function switchAuth(mode) {
-            const loginForm = document.getElementById('loginForm');
-            const regForm = document.getElementById('registerForm');
-            const tabLogin = document.getElementById('tabLogin');
-            const tabReg = document.getElementById('tabRegister');
-            const title = document.querySelector('.auth-title');
-
-            if (mode === 'login') {
-                loginForm.classList.remove('hidden');
-                regForm.classList.add('hidden');
-                tabLogin.classList.add('active');
-                tabReg.classList.remove('active');
-                title.textContent = "Chào mừng trở lại";
-            } else {
-                loginForm.classList.add('hidden');
-                regForm.classList.remove('hidden');
-                tabLogin.classList.remove('active');
-                tabReg.classList.add('active');
-                title.textContent = "Tạo tài khoản mới";
-            }
-            document.getElementById('authError').textContent = "";
-        }
-
-        function handleEnter(e, type) {
-            if (e.key === 'Enter') handleAuth(type);
-        }
-
-        function showToast(msg) {
-            const el = document.getElementById('toast');
-            el.textContent = msg;
-            el.className = "show";
-            setTimeout(() => { el.className = el.className.replace("show", ""); }, 3000);
-        }
-
-        // --- Socket.IO & Auth Logic ---
-        function handleAuth(type, autoLogin = false) {
-            const userIn = type === 'LOGIN' ? document.getElementById('loginUser') : document.getElementById('regUser');
-            const passIn = type === 'LOGIN' ? document.getElementById('loginPass') : document.getElementById('regPass');
-            const username = userIn.value.trim();
-            const password = passIn.value.trim();
-
-            if (type === 'REGISTER') {
-                const conf = document.getElementById('regConfirm').value.trim();
-                if (password !== conf) {
-                    document.getElementById('authError').textContent = "Mật khẩu không khớp!";
+                if (!username || !password) {
+                    if (!autoLogin) document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
                     return;
                 }
-            }
 
-            if (!username || !password) {
-                if (!autoLogin) document.getElementById('authError').textContent = "Vui lòng nhập đầy đủ thông tin!";
-                return;
-            }
+                if (!socket || socket.disconnected) {
+                    socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
+                    socket.on('connect', () => {
+                        sendJson(type, { username, password });
+                        myName = username;
+                    });
+                    socket.on('disconnect', () => {
+                        if (document.getElementById('chatPanel').style.display === 'flex') {
+                            showToast("Đã mất kết nối với Server");
+                            setTimeout(() => location.reload(), 2000);
+                        }
+                    });
+                    socket.on('message', (data) => handleServerMessage(data));
 
-            if (!socket || socket.disconnected) {
-                socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
-                socket.on('connect', () => {
-                    sendJson(type, { username, password });
-                    myName = username;
-                });
-                socket.on('disconnect', () => {
-                    if (document.getElementById('chatPanel').style.display === 'flex') {
-                        showToast("Đã mất kết nối với Server");
-                        setTimeout(() => location.reload(), 2000);
+                    if (socket.connected) {
+                        sendJson(type, { username, password });
+                        myName = username;
                     }
-                });
-                socket.on('message', (data) => handleServerMessage(data));
-
-                if (socket.connected) {
+                } else {
                     sendJson(type, { username, password });
                     myName = username;
                 }
-            } else {
-                sendJson(type, { username, password });
-                myName = username;
             }
-        }
 
-        function sendJson(type, payload) {
-            if (socket) socket.emit('message', { type, payload });
-        }
+            function sendJson(type, payload) {
+                if (socket) socket.emit('message', { type, payload });
+            }
 
-        function handleServerMessage(data) {
-            if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { } }
-            console.log("Recv:", data);
+            function handleServerMessage(data) {
+                if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { } }
+                console.log("Recv:", data);
 
-            switch (data.type) {
-                case 'LOGIN_SUCCESS':
-                    if (myName) {
-                        const pass = document.getElementById('loginPass').value || '';
-                        localStorage.setItem('chat_username', myName);
-                        localStorage.setItem('chat_password', pass);
-                    }
-                    enterChatMode();
-                    break;
-                case 'ERROR':
-                    document.getElementById('authError').textContent = data.payload;
-                    showToast(data.payload);
-                    break;
-                case 'SUCCESS':
-                    showToast(data.payload);
-                    if (data.payload.includes('Friend request sent') || data.payload.includes('now friends')) {
+                switch (data.type) {
+                    case 'LOGIN_SUCCESS':
+                        if (myName) {
+                            const pass = document.getElementById('loginPass').value || '';
+                            localStorage.setItem('chat_username', myName);
+                            localStorage.setItem('chat_password', pass);
+                        }
+                        enterChatMode();
+                        break;
+                    case 'ERROR':
+                        document.getElementById('authError').textContent = data.payload;
+                        showToast(data.payload);
+                        break;
+                    case 'SUCCESS':
+                        showToast(data.payload);
+                        if (data.payload.includes('Friend request sent') || data.payload.includes('now friends')) {
+                            sendJson('FRIEND_LIST', null);
+                        }
+                        break;
+                    case 'TEXT':
+                        // Public chat not used in this UI version mostly
+                        break;
+                    case 'PRIVATE':
+                        const p = data.payload;
+                        const partner = (p.sender === myName) ? p.receiver : p.sender;
+                        // Fix: Ensure we correctly identify the user when we are sending to them vs receiving
+                        // Actually, for unread logic, we only care if WE received it from someone else
+
+                        if (currentTarget === `User:${partner}`) {
+                            const msgType = (p.sender === myName) ? 'sent' : 'received';
+                            appendMessage(p.content, msgType, p.sender);
+                        } else if (p.sender !== myName) {
+                            // Received message but not in chat -> Add unread
+                            const key = `User:${p.sender}`;
+                            unreadCounts[key] = (unreadCounts[key] || 0) + 1;
+                            updateUnreadUI(key);
+                            showToast(`Tin nhắn mới từ ${p.sender}`);
+                            playSound();
+                        }
+                        break;
+                    case 'GROUP':
+                        const gKey = `Group:${data.payload.group_id}`;
+                        if (currentTarget === gKey) {
+                            const msgType = (data.payload.sender === myName) ? 'sent' : 'received';
+                            appendMessage(data.payload.content, msgType, data.payload.sender);
+                            if (data.payload.sender !== myName) playSound();
+                        } else if (myGroups.has(data.payload.group_id) && data.payload.sender !== myName) {
+                            unreadCounts[gKey] = (unreadCounts[gKey] || 0) + 1;
+                            updateUnreadUI(gKey);
+                            playSound();
+                        }
+                        break;
+                    case 'USER_GROUPS':
+                        myGroups.clear();
+                        data.payload.forEach(gid => myGroups.add(gid));
+                        // Request fresh list to update buttons
+                        sendJson('GROUPS_REQUEST', null);
+                        break;
+                    case 'FILE':
+                        const file = data.payload;
+                        const fileUrl = `${SERVER_URL}/download?filename=${encodeURIComponent(file.filename)}`;
+                        let fileMsg = "";
+                        const ext = file.filename.split('.').pop().toLowerCase();
+
+                        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                            fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><img src="${fileUrl}" class="media-preview" onclick="window.open('${fileUrl}', '_blank')">`;
+                        } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
+                            fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><video src="${fileUrl}" controls class="media-preview" style="max-height: 200px"></video>`;
+                        } else {
+                            fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize / 1024).toFixed(1)} KB)`;
+                        }
+
+                        const isMe = (file.sender === myName);
+                        // Hiển thị nếu đang ở đúng khung chat
+                        // Cần logic server trả về receiver/group_id để check, ở đây giả định server broadcast đúng
+                        // Simplified: just append if it looks like current context or just ignore context check for now
+                        appendMessage(fileMsg, isMe ? 'sent' : 'received', file.sender || 'File');
+                        if (!isMe) playSound();
+                        break;
+                    case 'TYPING':
+                        handleTyping(data.payload, true);
+                        break;
+                    case 'STOP_TYPING':
+                        handleTyping(data.payload, false);
+                        break;
+                    case 'UPDATE_NAME_SUCCESS':
+                        const newName = data.payload;
+                        document.getElementById('myNameDisplay').textContent = newName;
+                        showToast('Đã đổi tên thành công: ' + newName);
+                        break;
+                    case 'USERS_LIST':
+                        renderUsers(data.payload);
+                        break;
+                    case 'GROUPS_LIST':
+                        renderGroups(data.payload);
+                        break;
+                    case 'FRIEND_LIST':
+                        renderFriendsList(data.payload);
+                        break;
+                    case 'FRIEND_REQUEST':
+                        const reqUser = data.payload.requester;
+                        showToast(`Lời mời kết bạn từ ${reqUser}`);
+                        // Refresh lists (trigger re-fetch)
                         sendJson('FRIEND_LIST', null);
-                    }
-                    break;
-                case 'TEXT':
-                    // Public chat not used in this UI version mostly
-                    break;
-                case 'PRIVATE':
-                    const p = data.payload;
-                    const partner = (p.sender === myName) ? p.receiver : p.sender;
-                    // Fix: Ensure we correctly identify the user when we are sending to them vs receiving
-                    // Actually, for unread logic, we only care if WE received it from someone else
-
-                    if (currentTarget === `User:${partner}`) {
-                        const msgType = (p.sender === myName) ? 'sent' : 'received';
-                        appendMessage(p.content, msgType, p.sender);
-                    } else if (p.sender !== myName) {
-                        // Received message but not in chat -> Add unread
-                        const key = `User:${p.sender}`;
-                        unreadCounts[key] = (unreadCounts[key] || 0) + 1;
-                        updateUnreadUI(key);
-                        showToast(`Tin nhắn mới từ ${p.sender}`);
-                        playSound();
-                    }
-                    break;
-                case 'GROUP':
-                    const gKey = `Group:${data.payload.group_id}`;
-                    if (currentTarget === gKey) {
-                        const msgType = (data.payload.sender === myName) ? 'sent' : 'received';
-                        appendMessage(data.payload.content, msgType, data.payload.sender);
-                        if (data.payload.sender !== myName) playSound();
-                    } else if (myGroups.has(data.payload.group_id) && data.payload.sender !== myName) {
-                        unreadCounts[gKey] = (unreadCounts[gKey] || 0) + 1;
-                        updateUnreadUI(gKey);
-                        playSound();
-                    }
-                    break;
-                case 'USER_GROUPS':
-                    myGroups.clear();
-                    data.payload.forEach(gid => myGroups.add(gid));
-                    // Request fresh list to update buttons
-                    sendJson('GROUPS_REQUEST', null);
-                    break;
-                case 'FILE':
-                    const file = data.payload;
-                    const fileUrl = `${SERVER_URL}/download?filename=${encodeURIComponent(file.filename)}`;
-                    let fileMsg = "";
-                    const ext = file.filename.split('.').pop().toLowerCase();
-
-                    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                        fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><img src="${fileUrl}" class="media-preview" onclick="window.open('${fileUrl}', '_blank')">`;
-                    } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
-                        fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><video src="${fileUrl}" controls class="media-preview" style="max-height: 200px"></video>`;
-                    } else {
-                        fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize / 1024).toFixed(1)} KB)`;
-                    }
-
-                    const isMe = (file.sender === myName);
-                    // Hiển thị nếu đang ở đúng khung chat
-                    // Cần logic server trả về receiver/group_id để check, ở đây giả định server broadcast đúng
-                    // Simplified: just append if it looks like current context or just ignore context check for now
-                    appendMessage(fileMsg, isMe ? 'sent' : 'received', file.sender || 'File');
-                    if (!isMe) playSound();
-                    break;
-                case 'TYPING':
-                    handleTyping(data.payload, true);
-                    break;
-                case 'STOP_TYPING':
-                    handleTyping(data.payload, false);
-                    break;
-                case 'UPDATE_NAME_SUCCESS':
-                    const newName = data.payload;
-                    document.getElementById('myNameDisplay').textContent = newName;
-                    showToast('Đã đổi tên thành công: ' + newName);
-                    break;
-                case 'USERS_LIST':
-                    renderUsers(data.payload);
-                    break;
-                case 'GROUPS_LIST':
-                    renderGroups(data.payload);
-                    break;
-                case 'FRIEND_LIST':
-                    renderFriendsList(data.payload);
-                    break;
-                case 'FRIEND_REQUEST':
-                    const reqUser = data.payload.requester;
-                    showToast(`Lời mời kết bạn từ ${reqUser}`);
-                    // Refresh lists (trigger re-fetch)
-                    sendJson('FRIEND_LIST', null);
-                    break;
-                case 'FRIEND_ACCEPT':
-                    showToast(`${data.payload.accepter} đã đồng ý kết bạn!`);
-                    sendJson('FRIEND_LIST', null);
-                    break;
-                case 'USER_STATUS':
-                    // Update specific user status in friend list UI
-                    updateFriendStatus(data.payload);
-                    break;
-            }
-        }
-
-        function playSound() {
-            const audio = document.getElementById('notifySound');
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(e => { });
-            }
-        }
-
-        function handleTyping(payload, isTyping) {
-            const indicator = document.getElementById('typingIndicator');
-            let show = false;
-
-            if (payload.mode === 'private') {
-                if (currentTarget === `User:${payload.sender}`) show = true;
-            } else if (payload.mode === 'group') {
-                if (currentTarget === `Group:${payload.group_id}` && payload.sender !== myName) show = true;
-            }
-
-            if (show && isTyping) {
-                indicator.textContent = `${payload.sender} đang nhập...`;
-                indicator.classList.remove('hidden');
-            } else {
-                indicator.classList.add('hidden');
-            }
-        }
-
-        function promptChangeName() {
-            const newName = prompt("Nhập tên hiển thị mới:");
-            if (newName && newName.trim()) {
-                sendJson('UPDATE_NAME', { new_name: newName.trim() });
-            }
-        }
-
-        function updateUnreadUI(key) {
-            // Find element
-            const el = document.querySelector(`.list-item[data-key="${key}"]`);
-            if (!el) return;
-
-            const info = el.querySelector('.item-info');
-            if (!info) return;
-
-            let badge = info.querySelector('.unread-badge');
-            const count = unreadCounts[key] || 0;
-
-            if (count > 0) {
-                if (!badge) {
-                    badge = document.createElement('div');
-                    badge.className = 'unread-badge';
-                    info.appendChild(badge);
+                        break;
+                    case 'FRIEND_ACCEPT':
+                        showToast(`${data.payload.accepter} đã đồng ý kết bạn!`);
+                        sendJson('FRIEND_LIST', null);
+                        break;
+                    case 'USER_STATUS':
+                        // Update specific user status in friend list UI
+                        updateFriendStatus(data.payload);
+                        break;
+                    case 'GROUP_MEMBERS_RESPONSE':
+                        renderGroupMembers(data.payload);
+                        break;
                 }
-                badge.textContent = count > 99 ? '99+' : count;
-            } else {
-                if (badge) badge.remove();
             }
-        }
 
-        function stopTypingEvent() {
-            if (!currentTarget) return;
-            if (currentTarget.startsWith('User:')) {
-                const target = currentTarget.split(':')[1];
-                sendJson('STOP_TYPING', { mode: 'private', target: target });
-            } else if (currentTarget.startsWith('Group:')) {
-                const target = parseInt(currentTarget.split(':')[1]);
-                sendJson('STOP_TYPING', { mode: 'group', target: target });
+            function playSound() {
+                const audio = document.getElementById('notifySound');
+                if (audio) {
+                    audio.currentTime = 0;
+                    audio.play().catch(e => { });
+                }
             }
-        }
 
-        function enterChatMode() {
-            document.getElementById('authPanel').style.display = 'none';
-            document.getElementById('chatPanel').style.display = 'flex'; // Chat panel là flex
-            document.getElementById('myNameDisplay').textContent = myName;
-            document.getElementById('myAvatar').textContent = myName.charAt(0).toUpperCase();
+            function handleTyping(payload, isTyping) {
+                const indicator = document.getElementById('typingIndicator');
+                let show = false;
 
-            // Reset Chat View
-            document.getElementById('chatMainContent').style.display = 'none';
-            document.getElementById('welcomeScreen').style.display = 'flex';
-        }
-
-        // --- Render Lists ---
-        // --- Render Lists ---
-        function switchSidebar(view) {
-            const chats = document.getElementById('viewChats');
-            const discover = document.getElementById('viewDiscover');
-            const tChats = document.getElementById('tabChats');
-            const tDiscover = document.getElementById('tabDiscover');
-
-            if (view === 'chats') {
-                chats.classList.remove('hidden');
-                discover.classList.add('hidden');
-                tChats.classList.add('active');
-                tDiscover.classList.remove('active');
-            } else {
-                chats.classList.add('hidden');
-                discover.classList.remove('hidden');
-                tChats.classList.remove('active');
-                tDiscover.classList.add('active');
-            }
-        }
-
-        function renderFriendsList(payload) {
-            const friends = payload.friends; // list of {username, display_name, last_login, status}
-            const pending = payload.pending; // list of {username, display_name}
-            const sent = payload.sent || []; // list: {username}
-            const container = document.getElementById('friendsList');
-            container.innerHTML = '';
-
-            myFriends.clear();
-            myReceivedRequests.clear();
-            mySentRequests.clear();
-
-            friends.forEach(f => myFriends.add(f.username));
-            pending.forEach(p => myReceivedRequests.add(p.username));
-            sent.forEach(s => mySentRequests.add(s.username));
-
-            friends.forEach(f => {
-                const isActive = currentTarget === `User:${f.username}`;
-                const key = `User:${f.username}`;
-                const unread = unreadCounts[key] || 0;
-
-                const div = document.createElement('div');
-                div.className = `list-item ${isActive ? 'active' : ''}`;
-                div.setAttribute('data-key', key);
-
-                // Status text
-                let statusText = "Offline";
-                let statusColor = "#94a3b8"; // Gray
-                if (f.status === 'online') {
-                    statusText = "Online";
-                    statusColor = "#4ade80"; // Green
-                } else if (f.last_login) {
-                    // Parse time string
-                    const last = new Date(f.last_login);
-                    const now = new Date();
-                    const diffMs = now - last;
-                    const diffMins = Math.floor(diffMs / 60000);
-
-                    if (diffMins < 1) statusText = "Offline vừa xong";
-                    else if (diffMins < 60) statusText = `Offline ${diffMins} phút trước`;
-                    else {
-                        const hours = Math.floor(diffMins / 60);
-                        if (hours < 24) statusText = `Offline ${hours} giờ trước`;
-                        else statusText = `Offline ${Math.floor(hours / 24)} ngày trước`;
-                    }
+                if (payload.mode === 'private') {
+                    if (currentTarget === `User:${payload.sender}`) show = true;
+                } else if (payload.mode === 'group') {
+                    if (currentTarget === `Group:${payload.group_id}` && payload.sender !== myName) show = true;
                 }
 
-                div.innerHTML = `
+                if (show && isTyping) {
+                    indicator.textContent = `${payload.sender} đang nhập...`;
+                    indicator.classList.remove('hidden');
+                } else {
+                    indicator.classList.add('hidden');
+                }
+            }
+
+            function promptChangeName() {
+                const newName = prompt("Nhập tên hiển thị mới:");
+                if (newName && newName.trim()) {
+                    sendJson('UPDATE_NAME', { new_name: newName.trim() });
+                }
+            }
+
+            function updateUnreadUI(key) {
+                // Find element
+                const el = document.querySelector(`.list-item[data-key="${key}"]`);
+                if (!el) return;
+
+                const info = el.querySelector('.item-info');
+                if (!info) return;
+
+                let badge = info.querySelector('.unread-badge');
+                const count = unreadCounts[key] || 0;
+
+                if (count > 0) {
+                    if (!badge) {
+                        badge = document.createElement('div');
+                        badge.className = 'unread-badge';
+                        info.appendChild(badge);
+                    }
+                    badge.textContent = count > 99 ? '99+' : count;
+                } else {
+                    if (badge) badge.remove();
+                }
+            }
+
+            function stopTypingEvent() {
+                if (!currentTarget) return;
+                if (currentTarget.startsWith('User:')) {
+                    const target = currentTarget.split(':')[1];
+                    sendJson('STOP_TYPING', { mode: 'private', target: target });
+                } else if (currentTarget.startsWith('Group:')) {
+                    const target = parseInt(currentTarget.split(':')[1]);
+                    sendJson('STOP_TYPING', { mode: 'group', target: target });
+                }
+            }
+
+            function enterChatMode() {
+                document.getElementById('authPanel').style.display = 'none';
+                document.getElementById('chatPanel').style.display = 'flex'; // Chat panel là flex
+                document.getElementById('myNameDisplay').textContent = myName;
+                document.getElementById('myAvatar').textContent = myName.charAt(0).toUpperCase();
+
+                // Reset Chat View
+                document.getElementById('chatMainContent').style.display = 'none';
+                document.getElementById('welcomeScreen').style.display = 'flex';
+            }
+
+            // --- Render Lists ---
+            // --- Render Lists ---
+            function switchSidebar(view) {
+                const chats = document.getElementById('viewChats');
+                const discover = document.getElementById('viewDiscover');
+                const tChats = document.getElementById('tabChats');
+                const tDiscover = document.getElementById('tabDiscover');
+
+                if (view === 'chats') {
+                    chats.classList.remove('hidden');
+                    discover.classList.add('hidden');
+                    tChats.classList.add('active');
+                    tDiscover.classList.remove('active');
+                } else {
+                    chats.classList.add('hidden');
+                    discover.classList.remove('hidden');
+                    tChats.classList.remove('active');
+                    tDiscover.classList.add('active');
+                }
+            }
+
+            function renderFriendsList(payload) {
+                const friends = payload.friends; // list of {username, display_name, last_login, status}
+                const pending = payload.pending; // list of {username, display_name}
+                const sent = payload.sent || []; // list: {username}
+                const container = document.getElementById('friendsList');
+                container.innerHTML = '';
+
+                myFriends.clear();
+                myReceivedRequests.clear();
+                mySentRequests.clear();
+
+                friends.forEach(f => myFriends.add(f.username));
+                pending.forEach(p => myReceivedRequests.add(p.username));
+                sent.forEach(s => mySentRequests.add(s.username));
+
+                friends.forEach(f => {
+                    const isActive = currentTarget === `User:${f.username}`;
+                    const key = `User:${f.username}`;
+                    const unread = unreadCounts[key] || 0;
+
+                    const div = document.createElement('div');
+                    div.className = `list-item ${isActive ? 'active' : ''}`;
+                    div.setAttribute('data-key', key);
+
+                    // Status text
+                    let statusText = "Offline";
+                    let statusColor = "#94a3b8"; // Gray
+                    if (f.status === 'online') {
+                        statusText = "Online";
+                        statusColor = "#4ade80"; // Green
+                    } else if (f.last_login) {
+                        // Parse time string
+                        const last = new Date(f.last_login);
+                        const now = new Date();
+                        const diffMs = now - last;
+                        const diffMins = Math.floor(diffMs / 60000);
+
+                        if (diffMins < 1) statusText = "Offline vừa xong";
+                        else if (diffMins < 60) statusText = `Offline ${diffMins} phút trước`;
+                        else {
+                            const hours = Math.floor(diffMins / 60);
+                            if (hours < 24) statusText = `Offline ${hours} giờ trước`;
+                            else statusText = `Offline ${Math.floor(hours / 24)} ngày trước`;
+                        }
+                    }
+
+                    div.innerHTML = `
                     <div class="item-info">
                         <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: #e2e8f0; color: #64748b;">${f.display_name.charAt(0).toUpperCase()}</div>
                         <div>
@@ -1468,21 +1683,21 @@
                         ${unread > 0 ? `<div class="unread-badge">${unread > 99 ? '99+' : unread}</div>` : ''}
                     </div>
                 `;
-                div.onclick = () => setTarget('User', f.username, f.display_name);
-                container.appendChild(div);
-            });
+                    div.onclick = () => setTarget('User', f.username, f.display_name);
+                    container.appendChild(div);
+                });
 
-            // Pending
-            const pendingSec = document.getElementById('pendingSection');
-            const pendingList = document.getElementById('pendingList');
-            if (pending.length > 0) {
-                pendingSec.classList.remove('hidden');
-                pendingList.innerHTML = '';
-                pending.forEach(p => {
-                    const div = document.createElement('div');
-                    div.className = 'list-item';
-                    div.style.cursor = 'default';
-                    div.innerHTML = `
+                // Pending
+                const pendingSec = document.getElementById('pendingSection');
+                const pendingList = document.getElementById('pendingList');
+                if (pending.length > 0) {
+                    pendingSec.classList.remove('hidden');
+                    pendingList.innerHTML = '';
+                    pending.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = 'list-item';
+                        div.style.cursor = 'default';
+                        div.innerHTML = `
                         <div class="item-info">
                             <span>${p.display_name}</span>
                         </div>
@@ -1490,58 +1705,58 @@
                              <button class="action-btn" style="background:var(--primary);color:white" onclick="acceptFriend('${p.username}')">Đồng ý</button>
                         </div>
                     `;
-                    pendingList.appendChild(div);
-                });
-            } else {
-                pendingSec.classList.add('hidden');
-            }
-
-            if (lastUsersList.length > 0) {
-                renderUsers(lastUsersList);
-            }
-        }
-
-        function requestFriend(target) {
-            sendJson('FRIEND_REQUEST', { target: target });
-        }
-
-        function acceptFriend(requester) {
-            sendJson('FRIEND_ACCEPT', { requester: requester });
-        }
-
-        function updateFriendStatus(payload) {
-            sendJson('FRIEND_LIST', null);
-        }
-
-        function renderUsers(users) {
-            lastUsersList = users; // Cache it
-            const container = document.getElementById('usersList');
-            container.innerHTML = '';
-            users.forEach(u => {
-                const username = typeof u === 'string' ? u : u.username;
-                const displayName = typeof u === 'string' ? u : u.display_name;
-
-                if (username === myName) return;
-
-                const isFriend = myFriends.has(username);
-                const isSent = mySentRequests.has(username);
-                const isReceived = myReceivedRequests.has(username);
-
-                const div = document.createElement('div');
-                div.className = `list-item`;
-
-                let actions = '';
-                if (isFriend) {
-                    actions = `<span style="font-size:0.75rem;color:var(--success);">Bạn bè</span>`;
-                } else if (isReceived) {
-                    actions = `<button class="action-btn" style="background:var(--primary);color:white" onclick="acceptFriend('${username}')">Chấp nhận</button>`;
-                } else if (isSent) {
-                    actions = `<span style="font-size:0.75rem;color:#64748b;">Đã gửi lời mời</span>`;
+                        pendingList.appendChild(div);
+                    });
                 } else {
-                    actions = `<button class="action-btn btn-join" onclick="requestFriend('${username}')">Kết bạn</button>`;
+                    pendingSec.classList.add('hidden');
                 }
 
-                div.innerHTML = `
+                if (lastUsersList.length > 0) {
+                    renderUsers(lastUsersList);
+                }
+            }
+
+            function requestFriend(target) {
+                sendJson('FRIEND_REQUEST', { target: target });
+            }
+
+            function acceptFriend(requester) {
+                sendJson('FRIEND_ACCEPT', { requester: requester });
+            }
+
+            function updateFriendStatus(payload) {
+                sendJson('FRIEND_LIST', null);
+            }
+
+            function renderUsers(users) {
+                lastUsersList = users; // Cache it
+                const container = document.getElementById('usersList');
+                container.innerHTML = '';
+                users.forEach(u => {
+                    const username = typeof u === 'string' ? u : u.username;
+                    const displayName = typeof u === 'string' ? u : u.display_name;
+
+                    if (username === myName) return;
+
+                    const isFriend = myFriends.has(username);
+                    const isSent = mySentRequests.has(username);
+                    const isReceived = myReceivedRequests.has(username);
+
+                    const div = document.createElement('div');
+                    div.className = `list-item`;
+
+                    let actions = '';
+                    if (isFriend) {
+                        actions = `<span style="font-size:0.75rem;color:var(--success);">Bạn bè</span>`;
+                    } else if (isReceived) {
+                        actions = `<button class="action-btn" style="background:var(--primary);color:white" onclick="acceptFriend('${username}')">Chấp nhận</button>`;
+                    } else if (isSent) {
+                        actions = `<span style="font-size:0.75rem;color:#64748b;">Đã gửi lời mời</span>`;
+                    } else {
+                        actions = `<button class="action-btn btn-join" onclick="requestFriend('${username}')">Kết bạn</button>`;
+                    }
+
+                    div.innerHTML = `
                     <div class="item-info">
                         <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: #e2e8f0; color: #64748b;">${(displayName || username).charAt(0).toUpperCase()}</div>
                         <span>${displayName || username}</span>
@@ -1549,286 +1764,398 @@
                     ${actions}
                 `;
 
-                if (isFriend) {
-                    div.onclick = () => {
-                        switchSidebar('chats');
-                        setTarget('User', username, displayName || username);
-                    };
-                }
+                    if (isFriend) {
+                        div.onclick = () => {
+                            switchSidebar('chats');
+                            setTarget('User', username, displayName || username);
+                        };
+                    }
 
-                container.appendChild(div);
-            });
-        }
+                    container.appendChild(div);
+                });
+            }
 
-        function renderGroups(groups) {
-            const container = document.getElementById('groupsList');
-            if (!container) return;
-            container.innerHTML = '';
+            function renderGroups(groups) {
+                const joinedContainer = document.getElementById('groupsList');
+                const connectContainer = document.getElementById('groupsConnectList');
 
-            // Deduplicate groups by ID
-            const uniqueGroups = [];
-            const seenIds = new Set();
-            groups.forEach(g => {
-                if (!seenIds.has(g.id)) {
-                    seenIds.add(g.id);
-                    uniqueGroups.push(g);
-                }
-            });
+                if (joinedContainer) joinedContainer.innerHTML = '';
+                if (connectContainer) connectContainer.innerHTML = '';
 
-            uniqueGroups.forEach(g => {
-                const isMember = myGroups.has(g.id);
-                const isActive = currentTarget === `Group:${g.id}`;
-                const isCreator = g.creator === myName;
-                const key = `Group:${g.id}`;
-                const unread = unreadCounts[key] || 0;
+                // Deduplicate groups by ID
+                const uniqueGroups = [];
+                const seenIds = new Set();
+                groups.forEach(g => {
+                    if (!seenIds.has(g.id)) {
+                        seenIds.add(g.id);
+                        uniqueGroups.push(g);
+                    }
+                });
 
-                const div = document.createElement('div');
-                div.className = `list-item ${isActive ? 'active' : ''}`;
-                div.setAttribute('data-key', key);
+                uniqueGroups.forEach(g => {
+                    const isMember = myGroups.has(g.id);
+                    const isActive = currentTarget === `Group:${g.id}`;
+                    const isCreator = g.creator === myName;
+                    const key = `Group:${g.id}`;
+                    const unread = unreadCounts[key] || 0;
 
-                let actions = '';
-                if (isMember) {
-                    actions += `<button class="action-btn btn-leave" onclick="leaveGroup(${g.id})">Rời nhóm</button>`;
-                } else {
-                    actions += `<button class="action-btn btn-join" onclick="joinGroup(${g.id}, '${g.name}')">Tham gia</button>`;
-                }
+                    const div = document.createElement('div');
+                    // Style differently if in discovery vs joined?
+                    // But here we just use same list-item style
+                    div.className = `list-item ${isActive ? 'active' : ''}`;
+                    div.setAttribute('data-key', key);
 
-                if (isCreator) {
-                    actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
-                }
+                    let actions = '';
+                    if (isMember) {
+                        actions += `<button class="action-btn btn-leave" onclick="leaveGroup(${g.id})">Rời nhóm</button>`;
+                    } else {
+                        actions += `<button class="action-btn btn-join" onclick="joinGroup(${g.id}, '${g.name}')">Tham gia</button>`;
+                    }
 
-                div.innerHTML = `
-                    <div class="item-info" ${isMember ? `onclick=\"setTarget('Group', '${g.id}', '${g.name}')\"` : ''} style="${isMember ? '' : 'cursor:not-allowed;opacity:0.7;'}">
+                    if (isCreator) {
+                        actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
+                    }
+
+                    div.innerHTML = `
+                    <div class="item-info" ${isMember ? `onclick=\"setTarget('Group', '${g.id}', '${g.name}')\"` : ''} style="${isMember ? '' : 'cursor:default;'}">
                         <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: var(--secondary);">
                             <i class="fa-solid fa-users"></i>
                         </div>
                         <span>${g.name}</span>
-                        ${unread > 0 ? `<div class="unread-badge">${unread > 99 ? '99+' : unread}</div>` : ''}
+                        ${isMember && unread > 0 ? `<div class="unread-badge">${unread > 99 ? '99+' : unread}</div>` : ''}
                     </div>
                     <div class="item-actions">${actions}</div>
                 `;
-                container.appendChild(div);
-            });
-        }
 
-        function createNewGroup() {
-            const name = prompt("Nhập tên nhóm mới:");
-            if (name) sendJson('GROUP_CREATE', name);
-        }
+                    if (isMember) {
+                        if (joinedContainer) joinedContainer.appendChild(div);
+                    } else {
+                        if (connectContainer) connectContainer.appendChild(div);
+                    }
+                });
+            }
 
-        function openCreateGroupModal() {
-            if (!currentTarget || !currentTarget.startsWith('User:')) return;
+            function renderGroupMembers(payload) {
+                console.log("[DEBUG] Received group members payload:", payload);
+                if (!currentTarget || !currentTarget.startsWith('Group:')) {
+                    console.log("[DEBUG] Current target is not a group or null:", currentTarget);
+                    return;
+                }
 
-            const currentFriend = currentTarget.split(':')[1];
-            const modal = document.getElementById('createGroupModal');
-            const list = document.getElementById('selectFriendsList');
-            const nameInput = document.getElementById('newGroupNameFromChat');
+                const currentGid = currentTarget.split(':')[1];
+                // Convert both to strings for robust comparison
+                if (String(currentGid) !== String(payload.group_id)) {
+                    console.log("[DEBUG] Mismatch group ID. Current:", currentGid, "Payload:", payload.group_id);
+                    return;
+                }
 
-            nameInput.value = '';
-            list.innerHTML = '';
+                const list = document.getElementById('groupMembersList');
+                list.innerHTML = '';
 
-            myFriends.forEach(f => {
-                const isCurrent = (f === currentFriend);
-                const div = document.createElement('div');
-                div.className = 'friend-select-item';
-                div.innerHTML = `
+                if (!payload.members || payload.members.length === 0) {
+                    list.innerHTML = '<div style="padding:10px; color:#64748b; font-size:0.9rem;">Chưa có thành viên nào.</div>';
+                    console.log("[DEBUG] No members found for group", payload.group_id);
+                    return;
+                }
+
+                console.log("[DEBUG] Rendering", payload.members.length, "members");
+                payload.members.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'member-item';
+                    div.innerHTML = `
+                    <div class="avatar" style="background:#e2e8f0; color:#64748b;">${m.display_name.charAt(0).toUpperCase()}</div>
+                    <div class="member-name" style="flex:1;">${m.display_name}</div>
+                    <div class="member-status ${m.status}" title="${m.status}"></div>
+                `;
+                    list.appendChild(div);
+                });
+            }
+
+            function createNewGroup() {
+                const name = prompt("Nhập tên nhóm mới:");
+                if (name) sendJson('GROUP_CREATE', name);
+            }
+
+            function openCreateGroupModal() {
+                if (!currentTarget || !currentTarget.startsWith('User:')) return;
+
+                const currentFriend = currentTarget.split(':')[1];
+                const modal = document.getElementById('createGroupModal');
+                const list = document.getElementById('selectFriendsList');
+                const nameInput = document.getElementById('newGroupNameFromChat');
+
+                nameInput.value = '';
+                list.innerHTML = '';
+
+                myFriends.forEach(f => {
+                    const isCurrent = (f === currentFriend);
+                    const div = document.createElement('div');
+                    div.className = 'friend-select-item';
+                    div.innerHTML = `
                     <input type="checkbox" value="${f}" ${isCurrent ? 'checked disabled' : ''}>
                     <span>${f}</span>
                 `;
-                list.appendChild(div);
-            });
+                    list.appendChild(div);
+                });
 
-            modal.classList.remove('hidden');
-        }
-
-        function submitCreateGroupFromChat() {
-            const name = document.getElementById('newGroupNameFromChat').value.trim();
-            if (!name) {
-                alert("Vui lòng nhập tên nhóm");
-                return;
+                modal.classList.remove('hidden');
             }
 
-            const checkboxes = document.querySelectorAll('#selectFriendsList input[type="checkbox"]:checked');
-            const members = Array.from(checkboxes).map(cb => cb.value);
-
-            // Validate client side (optional but good UI) - include self in count thinking
-            // Members list contains friends. Me is implicit.
-            // Client checks: Me + Selected Friends >= 3
-            if (members.length + 1 < 3) {
-                alert("Nhóm phải có ít nhất 3 thành viên (bao gồm bạn).");
-                return;
-            }
-
-            sendJson('GROUP_CREATE', { name: name, members: members });
-            document.getElementById('createGroupModal').classList.add('hidden');
-        }
-
-        function deleteGroup(gid, gname) {
-            if (!confirm(`Bạn có chắc muốn xóa nhóm '${gname}'?`)) return;
-            sendJson('GROUP_DELETE', { group_id: gid });
-        }
-
-        function joinGroup(gid, gname) {
-            sendJson('GROUP_JOIN', gid);
-            // Optimistic update
-            myGroups.add(gid);
-            showToast(`Đã tham gia nhóm ${gname}`);
-            setTarget('Group', gid, gname);
-            // Re-render to update buttons
-            sendJson('GROUPS_REQUEST', null);
-        }
-
-        function leaveGroup(gid) {
-            if (!confirm("Bạn có chắc muốn rời nhóm?")) return;
-            sendJson('GROUP_LEAVE', gid);
-
-            // Optimistic update
-            myGroups.delete(gid);
-
-            if (currentTarget === `Group:${gid}`) {
-                currentTarget = null;
-                document.getElementById('chatMainContent').style.display = 'none';
-                document.getElementById('welcomeScreen').style.display = 'flex';
-            }
-            showToast("Đã rời nhóm");
-            // Re-render to update buttons
-            sendJson('GROUPS_REQUEST', null);
-        }
-
-        // --- Chat Navigation ---
-        function setTarget(type, id, name) {
-            currentTarget = `${type}:${id}`;
-
-            // Clear unread
-            unreadCounts[currentTarget] = 0;
-            updateUnreadUI(currentTarget);
-
-            // Switch view
-            document.getElementById('welcomeScreen').style.display = 'none';
-            document.getElementById('chatMainContent').style.display = 'flex'; // Must be flex
-
-            // Update Header
-            const targetNameEl = document.getElementById('targetName');
-            const targetStatusEl = document.getElementById('targetStatus');
-            const targetAvatarEl = document.getElementById('targetAvatar');
-
-            targetNameEl.textContent = name;
-            document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
-
-            if (type === 'User') {
-                targetStatusEl.textContent = "Tin nhắn riêng tư";
-                // Check status if friend
-                // Find friend status
-                const friendEl = document.querySelector(`.list-item[data-key="User:${id}"] .status-text`);
-                if (friendEl) {
-                    targetStatusEl.textContent = friendEl.textContent;
+            function submitCreateGroupFromChat() {
+                const name = document.getElementById('newGroupNameFromChat').value.trim();
+                if (!name) {
+                    alert("Vui lòng nhập tên nhóm");
+                    return;
                 }
 
-                targetAvatarEl.innerHTML = name.charAt(0).toUpperCase();
-                targetAvatarEl.style.background = '#e2e8f0';
-                targetAvatarEl.style.color = '#64748b';
+                const checkboxes = document.querySelectorAll('#selectFriendsList input[type="checkbox"]:checked');
+                const members = Array.from(checkboxes).map(cb => cb.value);
 
-                document.getElementById('btnCreateGroupFromChat').classList.remove('hidden');
+                // Validate client side (optional but good UI) - include self in count thinking
+                // Members list contains friends. Me is implicit.
+                // Client checks: Me + Selected Friends >= 3
+                if (members.length + 1 < 3) {
+                    alert("Nhóm phải có ít nhất 3 thành viên (bao gồm bạn).");
+                    return;
+                }
 
-            } else if (type === 'Group') {
-                targetStatusEl.textContent = `Nhóm ID: ${id}`;
-                targetAvatarEl.innerHTML = '<i class="fa-solid fa-users"></i>';
-                targetAvatarEl.style.background = 'var(--secondary)';
-                targetAvatarEl.style.color = 'white';
-
-                document.getElementById('btnCreateGroupFromChat').classList.add('hidden');
+                sendJson('GROUP_CREATE', { name: name, members: members });
+                document.getElementById('createGroupModal').classList.add('hidden');
             }
 
-            document.getElementById('messages').innerHTML = '';
-
-            // Fetch History
-            if (type === 'User') sendJson('HISTORY_REQUEST', { history_type: 'private', target: id });
-            else if (type === 'Group') sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
-
-            appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
-
-            if (window.innerWidth <= 768) {
-                document.getElementById('chatPanel').classList.add('mobile-show-chat');
+            function deleteGroup(gid, gname) {
+                if (!confirm(`Bạn có chắc muốn xóa nhóm '${gname}'?`)) return;
+                sendJson('GROUP_DELETE', { group_id: gid });
             }
-        }
 
-        function backToSidebar() {
-            document.getElementById('chatPanel').classList.remove('mobile-show-chat');
-        }
+            function joinGroup(gid, gname) {
+                sendJson('GROUP_JOIN', gid);
+                // Optimistic update
+                myGroups.add(gid);
+                showToast(`Đã tham gia nhóm ${gname}`);
 
-        function logout() {
-            if (confirm("Bạn có chắc muốn đăng xuất?")) {
-                localStorage.removeItem('chat_username');
-                localStorage.removeItem('chat_password');
-                location.reload();
+                // Switch sidebar to chats view
+                switchSidebar('chats');
+
+                setTarget('Group', gid, gname);
+                // Re-render to update buttons
+                sendJson('GROUPS_REQUEST', null);
             }
-        }
 
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const txt = input.value.trim();
-            if (!txt || !currentTarget) return;
+            function leaveGroup(gid) {
+                if (!confirm("Bạn có chắc muốn rời nhóm?")) return;
+                sendJson('GROUP_LEAVE', gid);
 
-            if (currentTarget.startsWith('User:')) {
-                const targetUser = currentTarget.split(':')[1];
-                sendJson('PRIVATE', { receiver: targetUser, content: txt });
-                appendMessage(txt, 'sent');
-            } else if (currentTarget.startsWith('Group:')) {
-                const groupId = parseInt(currentTarget.split(':')[1]);
-                sendJson('GROUP', { group_id: groupId, content: txt });
-                appendMessage(txt, 'sent');
+                // Optimistic update
+                myGroups.delete(gid);
+
+                if (currentTarget === `Group:${gid}`) {
+                    currentTarget = null;
+                    document.getElementById('chatMainContent').style.display = 'none';
+                    document.getElementById('welcomeScreen').style.display = 'flex';
+                }
+                showToast("Đã rời nhóm");
+                // Re-render to update buttons
+                sendJson('GROUPS_REQUEST', null);
             }
-            input.value = '';
-            stopTypingEvent();
-        }
 
-        function appendMessage(content, type = 'received', sender = '') {
-            const container = document.getElementById('messages');
-            let displayContent = content;
-            let displaySender = sender;
+            // --- Chat Navigation ---
+            function setTarget(type, id, name) {
+                currentTarget = `${type}:${id}`;
 
-            const div = document.createElement('div');
-            div.className = `message ${type}`;
+                // Buttons logic
+                const btnCreate = document.getElementById('btnCreateGroupFromChat');
+                const btnInfo = document.getElementById('btnToggleInfo');
 
-            let html = '';
-            if (displaySender && type !== 'sent' && type !== 'system') {
-                html += `<div class="msg-sender">${displaySender}</div>`;
+                if (type === 'Group') {
+                    btnCreate.classList.add('hidden');
+                    btnInfo.classList.remove('hidden');
+                    // We do NOT fetch members immediately to save resources/UI sync
+                    // Or we can fetch effectively but invisible
+                    // sendJson('GROUP_MEMBERS', { group_id: id }); // Fetch only when sidebar is active
+                } else {
+                    btnCreate.classList.remove('hidden');
+                    btnInfo.classList.add('hidden');
+                }
+
+                // Hide sidebar by default to avoid layout break
+                const sidebar = document.getElementById('chatInfoSidebar');
+                sidebar.classList.remove('active');
+
+                // Reset Accordion and Members List
+                const accContent = document.getElementById('membersAccordion');
+                if (accContent) {
+                    accContent.classList.remove('open');
+                    const accHeader = accContent.previousElementSibling;
+                    if (accHeader) accHeader.classList.remove('active');
+                    document.getElementById('groupMembersList').innerHTML = '';
+                }
+
+                // Clear unread
+                unreadCounts[currentTarget] = 0;
+                updateUnreadUI(currentTarget);
+
+                // Switch view
+                document.getElementById('welcomeScreen').style.display = 'none';
+                document.getElementById('chatMainContent').style.display = 'flex'; // Must be flex
+
+                // Update Header
+                const targetNameEl = document.getElementById('targetName');
+                const targetStatusEl = document.getElementById('targetStatus');
+                const targetAvatarEl = document.getElementById('targetAvatar');
+
+                targetNameEl.textContent = name;
+                document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
+
+                if (type === 'User') {
+                    targetStatusEl.textContent = "Tin nhắn riêng tư";
+                    // Check status if friend
+                    // Find friend status
+                    const friendEl = document.querySelector(`.list-item[data-key="User:${id}"] .status-text`);
+                    if (friendEl) {
+                        targetStatusEl.textContent = friendEl.textContent;
+                    }
+
+                    targetAvatarEl.innerHTML = name.charAt(0).toUpperCase();
+                    targetAvatarEl.style.background = '#e2e8f0';
+                    targetAvatarEl.style.color = '#64748b';
+
+                } else if (type === 'Group') {
+                    targetStatusEl.textContent = `Nhóm ID: ${id}`;
+                    targetAvatarEl.innerHTML = '<i class="fa-solid fa-users"></i>';
+                    targetAvatarEl.style.background = 'var(--secondary)';
+                    targetAvatarEl.style.color = 'white';
+                    document.getElementById('btnCreateGroupFromChat').classList.add('hidden');
+                }
+
+                document.getElementById('messages').innerHTML = '';
+
+                // Fetch History
+                if (type === 'User') sendJson('HISTORY_REQUEST', { history_type: 'private', target: id });
+                else if (type === 'Group') sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
+
+                appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
+
+                if (window.innerWidth <= 768) {
+                    document.getElementById('chatPanel').classList.add('mobile-show-chat');
+                }
             }
-            html += `<div>${displayContent}</div>`;
 
-            div.innerHTML = html;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
+            function toggleAccordion(id, header) {
+                const content = document.getElementById(id);
+                if (content) {
+                    const isOpen = content.classList.contains('open');
+                    if (isOpen) {
+                        content.classList.remove('open');
+                        header.classList.remove('active');
+                    } else {
+                        content.classList.add('open');
+                        header.classList.add('active');
 
-        // --- Emoji Logic ---
-        const emojis = ["😀", "😂", "🥰", "😍", "😎", "😭", "😡", "👍", "👎", "🎉", "❤️", "💔", "🔥", "✨", "🎁", "👋", "🙏", "🤝", "👀", "💯", "✅", "❌", "❓"];
-        function toggleEmojiPicker() {
-            const picker = document.getElementById('emojiPicker');
-            picker.classList.toggle('hidden');
-        }
-        function insertEmoji(emoji) {
-            const input = document.getElementById('chatInput');
-            input.value += emoji;
-            input.focus();
-        }
-        document.addEventListener('click', function (e) {
-            const picker = document.getElementById('emojiPicker');
-            const btn = document.getElementById('emojiBtn');
-            if (picker && !picker.classList.contains('hidden') && !picker.contains(e.target) && !btn.contains(e.target)) {
-                picker.classList.add('hidden');
+                        if (id === 'membersAccordion') {
+                            if (currentTarget && currentTarget.startsWith('Group:')) {
+                                document.getElementById('groupMembersList').innerHTML = '<div style="padding:10px;font-size:0.8rem;color:#64748b;">Đang tải...</div>';
+                                const gid = currentTarget.split(':')[1];
+                                sendJson('GROUP_MEMBERS', { group_id: gid });
+                            }
+                        }
+                    }
+                }
             }
-        });
-        const pickerContainer = document.getElementById('emojiPicker');
-        if (pickerContainer) {
-            emojis.forEach(emo => {
-                const span = document.createElement('span');
-                span.textContent = emo;
-                span.onclick = () => insertEmoji(emo);
-                pickerContainer.appendChild(span);
+
+            function toggleChatInfo() {
+                const sidebar = document.getElementById('chatInfoSidebar');
+                sidebar.classList.toggle('active');
+                // Re-fetch members if opening
+                if (sidebar.classList.contains('active')) {
+                    // By default open the members accordion? Or keep it closed?
+                    // Let's keep it closed or user opens it.
+                    // Or auto open? Let's auto open for convenience
+                    const accContent = document.getElementById('membersAccordion');
+                    const accHeader = accContent.previousElementSibling;
+                    if (!accContent.classList.contains('open')) {
+                        toggleAccordion('membersAccordion', accHeader);
+                    }
+                }
+            }
+
+            function backToSidebar() {
+                document.getElementById('chatPanel').classList.remove('mobile-show-chat');
+            }
+
+            function logout() {
+                if (confirm("Bạn có chắc muốn đăng xuất?")) {
+                    localStorage.removeItem('chat_username');
+                    localStorage.removeItem('chat_password');
+                    location.reload();
+                }
+            }
+
+            function sendMessage() {
+                const input = document.getElementById('chatInput');
+                const txt = input.value.trim();
+                if (!txt || !currentTarget) return;
+
+                if (currentTarget.startsWith('User:')) {
+                    const targetUser = currentTarget.split(':')[1];
+                    sendJson('PRIVATE', { receiver: targetUser, content: txt });
+                    appendMessage(txt, 'sent');
+                } else if (currentTarget.startsWith('Group:')) {
+                    const groupId = parseInt(currentTarget.split(':')[1]);
+                    sendJson('GROUP', { group_id: groupId, content: txt });
+                    appendMessage(txt, 'sent');
+                }
+                input.value = '';
+                stopTypingEvent();
+            }
+
+            function appendMessage(content, type = 'received', sender = '') {
+                const container = document.getElementById('messages');
+                let displayContent = content;
+                let displaySender = sender;
+
+                const div = document.createElement('div');
+                div.className = `message ${type}`;
+
+                let html = '';
+                if (displaySender && type !== 'sent' && type !== 'system') {
+                    html += `<div class="msg-sender">${displaySender}</div>`;
+                }
+                html += `<div>${displayContent}</div>`;
+
+                div.innerHTML = html;
+                container.appendChild(div);
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // --- Emoji Logic ---
+            const emojis = ["😀", "😂", "🥰", "😍", "😎", "😭", "😡", "👍", "👎", "🎉", "❤️", "💔", "🔥", "✨", "🎁", "👋", "🙏", "🤝", "👀", "💯", "✅", "❌", "❓"];
+            function toggleEmojiPicker() {
+                const picker = document.getElementById('emojiPicker');
+                picker.classList.toggle('hidden');
+            }
+            function insertEmoji(emoji) {
+                const input = document.getElementById('chatInput');
+                input.value += emoji;
+                input.focus();
+            }
+            document.addEventListener('click', function (e) {
+                const picker = document.getElementById('emojiPicker');
+                const btn = document.getElementById('emojiBtn');
+                if (picker && !picker.classList.contains('hidden') && !picker.contains(e.target) && !btn.contains(e.target)) {
+                    picker.classList.add('hidden');
+                }
             });
-        }
-    </script>
+            const pickerContainer = document.getElementById('emojiPicker');
+            if (pickerContainer) {
+                emojis.forEach(emo => {
+                    const span = document.createElement('span');
+                    span.textContent = emo;
+                    span.onclick = () => insertEmoji(emo);
+                    pickerContainer.appendChild(span);
+                });
+            }
+        </script>
 </body>
 
 </html>

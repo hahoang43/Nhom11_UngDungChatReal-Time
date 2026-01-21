@@ -86,7 +86,6 @@ def handle_message(data):
     msg_type = data.get('type')
     payload = data.get('payload')
 
-    # Xử lý yêu cầu lấy danh sách nhóm từ client
     if msg_type == 'GROUPS_REQUEST':
         groups = db.get_all_groups()
         # Convert datetime fields to string
@@ -95,6 +94,29 @@ def handle_message(data):
                 if hasattr(v, 'isoformat'):
                     g[k] = v.isoformat()
         emit('message', {'type': protocol.MSG_GROUPS_LIST, 'payload': groups}, room=sid)
+        return
+
+    if msg_type == protocol.MSG_GROUP_MEMBERS:
+        group_id = payload.get('group_id')
+        if group_id:
+            try:
+                # Ensure group_id is int for DB
+                group_id_int = int(group_id)
+                members = db.get_group_members(group_id_int)
+                # Fetch display names and status for each member
+                detailed_members = []
+                for m_username in members:
+                    d_name = db.get_user_display_name(m_username)
+                    status = 'online' if get_sid_by_username(m_username) else 'offline'
+                    # Maybe get last login too if offline
+                    detailed_members.append({
+                        'username': m_username,
+                        'display_name': d_name,
+                        'status': status
+                    })
+                emit('message', {'type': protocol.MSG_GROUP_MEMBERS_RESPONSE, 'payload': {'group_id': str(group_id), 'members': detailed_members}}, room=sid)
+            except ValueError:
+                pass # Invalid ID format
         return
 
     if msg_type == protocol.MSG_REGISTER:
