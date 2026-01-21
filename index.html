@@ -1179,6 +1179,7 @@
         }
 
         // --- Render Lists ---
+        // --- Render Lists ---
         function renderUsers(users) {
             const container = document.getElementById('usersList');
             container.innerHTML = '';
@@ -1211,10 +1212,13 @@
                 const div = document.createElement('div');
                 div.className = `list-item ${isActive ? 'active' : ''}`;
 
-                let actions = `
-                    <button class="action-btn btn-join ${isMember ? 'hidden' : ''}" onclick="joinGroup(${g.id}, '${g.name}')">Tham gia</button>
-                    <button class="action-btn btn-leave ${isMember ? '' : 'hidden'}" onclick="leaveGroup(${g.id})">Rời nhóm</button>
-                `;
+                let actions = '';
+                if (isMember) {
+                    actions += `<button class="action-btn btn-leave" onclick="leaveGroup(${g.id})">Rời nhóm</button>`;
+                } else {
+                    actions += `<button class="action-btn btn-join" onclick="joinGroup(${g.id}, '${g.name}')">Tham gia</button>`;
+                }
+
                 if (isCreator) {
                     actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
                 }
@@ -1244,21 +1248,29 @@
 
         function joinGroup(gid, gname) {
             sendJson('GROUP_JOIN', gid);
+            // Optimistic update
             myGroups.add(gid);
             showToast(`Đã tham gia nhóm ${gname}`);
             setTarget('Group', gid, gname);
+            // Re-render to update buttons
+            sendJson('GROUPS_REQUEST', null);
         }
 
         function leaveGroup(gid) {
             if (!confirm("Bạn có chắc muốn rời nhóm?")) return;
             sendJson('GROUP_LEAVE', gid);
+
+            // Optimistic update
             myGroups.delete(gid);
+
             if (currentTarget === `Group:${gid}`) {
                 currentTarget = null;
                 document.getElementById('chatMainContent').style.display = 'none';
                 document.getElementById('welcomeScreen').style.display = 'flex';
             }
             showToast("Đã rời nhóm");
+            // Re-render to update buttons
+            sendJson('GROUPS_REQUEST', null);
         }
 
         // --- Chat Navigation ---

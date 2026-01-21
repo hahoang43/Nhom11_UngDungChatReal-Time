@@ -130,18 +130,7 @@ def handle_message(data):
         else:
             emit('message', {'type': 'ERROR', 'payload': 'Invalid username or password'})
 
-    if msg_type == protocol.MSG_LOGIN:
-        username = payload.get('username')
-        password = payload.get('password', 'default')
-        if db.login_user(username, password):
-            clients[sid] = username
-            emit('message', {'type': 'LOGIN_SUCCESS', 'payload': f'Welcome {username}!'} )
-            # Do NOT send public history or join any group
-            emit('message', {'type': 'USER_GROUPS', 'payload': []})
-            broadcast_users_list()
-            broadcast_groups_list()
-        else:
-            emit('message', {'type': 'ERROR', 'payload': 'Invalid username or password'})
+
 
     # Đã loại bỏ hoàn toàn luồng chat công khai MSG_TEXT
 
