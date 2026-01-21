@@ -739,6 +739,98 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             margin-left: auto;
         }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            animation: slideDown 0.3s ease;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-actions button {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .modal-actions button:first-child {
+            background: #e2e8f0;
+            color: #64748b;
+        }
+
+        .modal-actions button:last-child {
+            background: var(--primary);
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        #selectFriendsList {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 15px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .friend-select-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+        }
+
+        .friend-select-item:last-child {
+            border-bottom: none;
+        }
+
+        .friend-select-item:hover {
+            background: #f8fafc;
+        }
     </style>
 </head>
 
@@ -863,6 +955,11 @@
                         <h2 id="targetName"></h2>
                         <div class="chat-subtitle" id="targetStatus"></div>
                     </div>
+                    <button id="btnCreateGroupFromChat" class="btn-icon-small hidden"
+                        style="margin-left: auto; color: var(--primary); font-size: 1.2rem;"
+                        title="Tạo nhóm với người này" onclick="openCreateGroupModal()">
+                        <i class="fa-solid fa-users-viewfinder"></i>
+                    </button>
                     <div id="typingIndicator" class="typing-indicator hidden">Đang nhập...</div>
                 </div>
 
@@ -894,6 +991,24 @@
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="createGroupModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Tạo nhóm với bạn bè</h3>
+            <div class="input-group">
+                <input type="text" id="newGroupNameFromChat" placeholder="Tên nhóm..." />
+            </div>
+            <div style="font-size:0.9rem; margin-bottom:5px; font-weight:500;">Chọn thành viên:</div>
+            <div id="selectFriendsList"></div>
+            <div style="font-size:0.8rem; color:#64748b; margin-top:5px;">
+                * Cần tối thiểu 3 thành viên (bao gồm bạn).
+            </div>
+            <div class="modal-actions">
+                <button onclick="document.getElementById('createGroupModal').classList.add('hidden')">Hủy</button>
+                <button onclick="submitCreateGroupFromChat()">Tạo nhóm</button>
             </div>
         </div>
     </div>
@@ -1501,6 +1616,53 @@
             if (name) sendJson('GROUP_CREATE', name);
         }
 
+        function openCreateGroupModal() {
+            if (!currentTarget || !currentTarget.startsWith('User:')) return;
+
+            const currentFriend = currentTarget.split(':')[1];
+            const modal = document.getElementById('createGroupModal');
+            const list = document.getElementById('selectFriendsList');
+            const nameInput = document.getElementById('newGroupNameFromChat');
+
+            nameInput.value = '';
+            list.innerHTML = '';
+
+            myFriends.forEach(f => {
+                const isCurrent = (f === currentFriend);
+                const div = document.createElement('div');
+                div.className = 'friend-select-item';
+                div.innerHTML = `
+                    <input type="checkbox" value="${f}" ${isCurrent ? 'checked disabled' : ''}>
+                    <span>${f}</span>
+                `;
+                list.appendChild(div);
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function submitCreateGroupFromChat() {
+            const name = document.getElementById('newGroupNameFromChat').value.trim();
+            if (!name) {
+                alert("Vui lòng nhập tên nhóm");
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll('#selectFriendsList input[type="checkbox"]:checked');
+            const members = Array.from(checkboxes).map(cb => cb.value);
+
+            // Validate client side (optional but good UI) - include self in count thinking
+            // Members list contains friends. Me is implicit.
+            // Client checks: Me + Selected Friends >= 3
+            if (members.length + 1 < 3) {
+                alert("Nhóm phải có ít nhất 3 thành viên (bao gồm bạn).");
+                return;
+            }
+
+            sendJson('GROUP_CREATE', { name: name, members: members });
+            document.getElementById('createGroupModal').classList.add('hidden');
+        }
+
         function deleteGroup(gid, gname) {
             if (!confirm(`Bạn có chắc muốn xóa nhóm '${gname}'?`)) return;
             sendJson('GROUP_DELETE', { group_id: gid });
@@ -1565,11 +1727,16 @@
                 targetAvatarEl.innerHTML = name.charAt(0).toUpperCase();
                 targetAvatarEl.style.background = '#e2e8f0';
                 targetAvatarEl.style.color = '#64748b';
+
+                document.getElementById('btnCreateGroupFromChat').classList.remove('hidden');
+
             } else if (type === 'Group') {
                 targetStatusEl.textContent = `Nhóm ID: ${id}`;
                 targetAvatarEl.innerHTML = '<i class="fa-solid fa-users"></i>';
                 targetAvatarEl.style.background = 'var(--secondary)';
                 targetAvatarEl.style.color = 'white';
+
+                document.getElementById('btnCreateGroupFromChat').classList.add('hidden');
             }
 
             document.getElementById('messages').innerHTML = '';

@@ -223,11 +223,48 @@ def handle_message(data):
                 })
 
     elif msg_type == protocol.MSG_GROUP_CREATE:
-        group_name = payload
+        group_name = ""
+        members_to_add = []
+
+        if isinstance(payload, dict):
+            group_name = payload.get('name')
+            members_to_add = payload.get('members', [])
+        else:
+            group_name = payload
+        
+        # Validation for multi-member creation
+        if isinstance(payload, dict): 
+            all_members = set(members_to_add)
+            all_members.add(username) # Ensure creator is counted
+            if len(all_members) < 3:
+                emit('message', {'type': 'ERROR', 'payload': "Nhóm phải có ít nhất 3 thành viên."})
+                return
+
         group_id = db.create_group(group_name, username)
         if group_id:
             db.add_member_to_group(group_id, username)
             join_room(f"group_{group_id}")
+            
+            # Add other members
+            for m in members_to_add:
+                if m != username:
+                    if db.add_member_to_group(group_id, m):
+                        m_sid = get_sid_by_username(m)
+                        if m_sid:
+                            join_room(f"group_{group_id}", sid=m_sid)
+                            emit('message', {'type': 'SUCCESS', 'payload': f"Bạn đã được thêm vào nhóm '{group_name}'"}, room=m_sid)
+                            # Update their group list mapping
+                            # Ideally we should send USER_GROUPS to them, but broadcast_groups + join_room allows them to receive messages
+                            # Sending USER_GROUPS for consistency if client relies on it for mapping
+                            user_groups = db.get_user_groups(m)
+                            u_gids = [ug['id'] for ug in user_groups]
+                            emit('message', {'type': 'USER_GROUPS', 'payload': u_gids}, room=m_sid)
+
+            # Update creator's group mapping
+            user_groups = db.get_user_groups(username)
+            u_gids = [ug['id'] for ug in user_groups]
+            emit('message', {'type': 'USER_GROUPS', 'payload': u_gids})
+
             emit('message', {'type': 'SUCCESS', 'payload': f"Group '{group_name}' created"})
             broadcast_groups_list()
         else:
