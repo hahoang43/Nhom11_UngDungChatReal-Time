@@ -1447,8 +1447,20 @@
 
         function renderGroups(groups) {
             const container = document.getElementById('groupsList');
+            if (!container) return;
             container.innerHTML = '';
+
+            // Deduplicate groups by ID
+            const uniqueGroups = [];
+            const seenIds = new Set();
             groups.forEach(g => {
+                if (!seenIds.has(g.id)) {
+                    seenIds.add(g.id);
+                    uniqueGroups.push(g);
+                }
+            });
+
+            uniqueGroups.forEach(g => {
                 const isMember = myGroups.has(g.id);
                 const isActive = currentTarget === `Group:${g.id}`;
                 const isCreator = g.creator === myName;
