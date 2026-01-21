@@ -1,100 +1,76 @@
 # Nhom11_UngDungChatReal-Time
 
-Ứng dụng chat real-time với giao diện web và desktop.
+Ứng dụng chat real-time với giao diện web, hỗ trợ nhắn tin riêng, nhóm, gửi file, và hệ thống bạn bè.
 
-## Cài Đặt
-pip install -r requirements.txt
+## 1. Cài Đặt
 
-1. Cài đặt Python 3.8+
-2. Cài đặt dependencies:
-   ```bash
-   
-   ```
+Yêu cầu: Python 3.8+
 
-## Chạy Chương Trình
-
-### Chạy Server
+Cài đặt các thư viện cần thiết:
 ```bash
-cd src/server
-python main.py
+python -m pip install -r requirements.txt
 ```
 
-### Chạy Client Desktop
+Nếu muốn chạy test tự động, cài thêm:
 ```bash
-cd src/client
-python main.py
+python -m pip install requests
 ```
 
-### Truy Cập Web Client
-Mở file `docs/webclient.html` trong trình duyệt web.
+## 2. Chạy Server
 
-## Đồng Bộ Lịch Sử Chat Giữa Các Máy
+Server sẽ chạy mặc định tại cổng `8000`.
 
-Vì database được lưu cục bộ (SQLite), lịch sử chat sẽ không tự động đồng bộ giữa các máy. Để chuyển lịch sử chat:
-
-### Bước 1: Xuất Lịch Sử Từ Máy A
 ```bash
-cd src/server
-python export_import.py export chat_history.json
+# Từ thư mục gốc của dự án
+python src/server/main.py
 ```
 
-**Kết quả**: File `chat_history.json` sẽ được tạo chứa tất cả tin nhắn.
+Khi chạy thành công, bạn sẽ thấy thông báo:
+> Running on http://0.0.0.0:8000
 
-### Bước 2: Chuyển File Sang Máy B
-- Copy file `chat_history.json` từ máy A sang máy B
-- Đặt file vào thư mục `src/server/` trên máy B
+## 3. Chạy Client
 
-### Bước 3: Nhập Lịch Sử Vào Máy B
+### Option A: Giao diện Web (Khuyên dùng)
+Mở file `index.html` (nằm ở thư mục gốc) bằng trình duyệt web bất kỳ.
+
+> **Lưu ý**: Có thể mở nhiều tab để chat với nhau.
+
+### Option B: Giao diện Desktop (Python/Tkinter)
+Nếu bạn muốn chạy ứng dụng desktop:
 ```bash
-cd src/server
-python export_import.py import chat_history.json
+# Từ thư mục gốc
+python src/client/main.py
 ```
+*Lưu ý: Giao diện desktop có thể chưa cập nhật đầy đủ các tính năng mới (như Friend System) so với bản Web.*
 
-**Kết quả**: Tất cả tin nhắn sẽ được thêm vào database của máy B.
+## 4. Tính Năng Chính
 
-### Ví Dụ Chi Tiết
+- **Hệ thống Bạn Bè**:
+    - Gửi lời mời kết bạn (Tab "Khám phá").
+    - Chấp nhận lời mời (Tab "Khám phá" hoặc sidebar).
+    - Hiển thị trạng thái Online/Offline của bạn bè.
+- **Chat**:
+    - Chat riêng tư (chỉ với bạn bè).
+    - Chat nhóm.
+    - Gửi file đính kèm.
+    - Emoji picker.
+    - Thông báo tin nhắn chưa đọc.
 
-**Trên Máy A (có lịch sử chat):**
+## 5. Chạy Kiểm Thử (Testing)
+
+Để kiểm tra tự động luồng kết bạn (Friend Flow):
+
+1. Đảm bảo server đang chạy tại port 8000.
+2. Chạy script test:
 ```bash
-# Terminal trên máy A
-D:\ChatMobile\Nhom11_UngDungChatReal-Time\src\server> python export_import.py export chat_history.json
-✅ Đã xuất thành công 25 tin nhắn vào chat_history.json
+python tests/verify_friend_flow.py
 ```
+Script sẽ tự động tạo 2 user (`alice_test`, `bob_test`) và mô phỏng quá trình kết bạn, chat để xác minh hệ thống hoạt động đúng.
 
-**Chuyển file `chat_history.json` sang Máy B**
+## 6. Cấu Trúc Dự Án
 
-**Trên Máy B (mới, chưa có lịch sử):**
-```bash
-# Terminal trên máy B
-D:\ChatMobile\Nhom11_UngDungChatReal-Time\src\server> python export_import.py import chat_history.json
-✅ Đã nhập thành công 25 tin nhắn từ chat_history.json
-```
-
-### Lưu Ý Quan Trọng
-- **Chỉ import khi server đang tắt** để tránh xung đột dữ liệu
-- File JSON chứa thông tin nhạy cảm (nội dung tin nhắn), bảo mật khi chuyển file
-- Import sử dụng `INSERT OR IGNORE`, không ghi đè tin nhắn đã tồn tại
-- Có thể export/import nhiều lần, tin nhắn trùng lặp sẽ bị bỏ qua
-
-### Kiểm Tra Sau Khi Import
-Sau khi import, bạn có thể kiểm tra bằng cách chạy test:
-```bash
-python test_db.py
-```
-Sẽ hiển thị số lượng tin nhắn trong database.
-
-## Cấu Trúc Dự Án
-
-- `src/server/`: Mã nguồn server
-- `src/client/`: Mã nguồn client desktop
-- `src/common/`: Mã dùng chung
-- `docs/`: Tài liệu và web client
-- `tests/`: Test cases
-
-## Tính Năng
-
-- Chat công khai và riêng tư
-- Đăng ký/đăng nhập người dùng
-- Lưu trữ lịch sử chat
-- Giao diện web và desktop
-- Hỗ trợ WebSocket
+- `src/server/`: Mã nguồn server (Python/Flask-SocketIO).
+- `src/common/`: Các định nghĩa dùng chung (Message Protocol).
+- `index.html`: Giao diện chính của Web Client.
+- `requirements.txt`: Danh sách thư viện phụ thuộc.
+- `tests/`: Các script kiểm thử tự động.

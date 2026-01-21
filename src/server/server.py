@@ -58,6 +58,21 @@ def handle_disconnect():
             except:
                 pass
             del file_transfers[sid]
+        
+        # Update last seen
+        db.update_last_seen(username)
+        
+        # Notify friends that user is offline
+        friends = db.get_friends_with_status(username)
+        for friend in friends:
+            f_name = friend['username']
+            f_sid = get_sid_by_username(f_name)
+            if f_sid:
+                 emit('message', {
+                    'type': protocol.MSG_USER_STATUS,
+                    'payload': {'username': username, 'status': 'offline', 'last_seen': 'Just now'}
+                }, room=f_sid)
+
         emit('message', {
             'type': protocol.MSG_TEXT,
             'payload': f"Server: {username} has left the chat."
@@ -109,6 +124,20 @@ def handle_message(data):
             
             # Send history
             send_history(sid, username)
+            
+            # Send Friend List
+            send_friend_list(sid, username)
+            
+            # Notify friends I am online
+            friends = db.get_friends_with_status(username)
+            for friend in friends:
+                f_name = friend['username']
+                f_sid = get_sid_by_username(f_name)
+                if f_sid:
+                     emit('message', {
+                        'type': protocol.MSG_USER_STATUS,
+                        'payload': {'username': username, 'status': 'online'}
+                    }, room=f_sid)
 
             # Restore group memberships
             user_groups = db.get_user_groups(username)
@@ -137,6 +166,12 @@ def handle_message(data):
     elif msg_type == protocol.MSG_PRIVATE:
         receiver = payload.get('receiver')
         content = payload.get('content')
+        
+        # Check friendship
+        if not db.are_friends(username, receiver):
+             emit('message', {'type': 'ERROR', 'payload': f"You are not friends with {receiver}. Add them to chat."})
+             return
+
         db.save_message(username, content, receiver=receiver, message_type='private')
         
         target_sid = get_sid_by_username(receiver)
@@ -327,6 +362,42 @@ def handle_message(data):
         else:
             emit('message', {'type': 'ERROR', 'payload': "Failed to update name"})
 
+    elif msg_type == protocol.MSG_FRIEND_REQUEST:
+        target = payload.get('target')
+        if target == username:
+             emit('message', {'type': 'ERROR', 'payload': "Cannot add yourself."})
+             return
+             
+        success, msg = db.request_friend(username, target)
+        if success:
+            emit('message', {'type': 'SUCCESS', 'payload': f"Friend request sent to {target}"})
+            # Notify target
+            target_sid = get_sid_by_username(target)
+            if target_sid:
+                 emit('message', {'type': protocol.MSG_FRIEND_REQUEST, 'payload': {'requester': username}}, room=target_sid)
+        else:
+            emit('message', {'type': 'ERROR', 'payload': msg})
+
+    elif msg_type == protocol.MSG_FRIEND_ACCEPT:
+        requester = payload.get('requester')
+        if db.accept_friend(username, requester):
+            emit('message', {'type': 'SUCCESS', 'payload': f"You and {requester} are now friends!"})
+            # Notify requester
+            req_sid = get_sid_by_username(requester)
+            if req_sid:
+                emit('message', {'type': protocol.MSG_FRIEND_ACCEPT, 'payload': {'accepter': username}}, room=req_sid)
+                # Refresh friend lists for both
+                send_friend_list(req_sid, requester)
+            
+            # Refresh my list
+            send_friend_list(sid, username)
+        else:
+             emit('message', {'type': 'ERROR', 'payload': "Failed to accept request."})
+
+    elif msg_type == protocol.MSG_FRIEND_LIST:
+        send_friend_list(sid, username)
+
+
 def format_file_size(size_bytes):
     if size_bytes < 1024:
         return f"{size_bytes} B"
@@ -356,6 +427,25 @@ def send_history(sid, username):
                 'timestamp': row['timestamp']
             }
         }, room=sid)
+
+def send_friend_list(sid, username):
+    friends = db.get_friends_with_status(username)
+    pending = db.get_pending_requests(username)
+    sent = db.get_sent_requests(username)
+    
+    # Check online status for friends
+    for f in friends:
+        f_sid = get_sid_by_username(f['username'])
+        f['status'] = 'online' if f_sid else 'offline'
+        
+    emit('message', {
+        'type': protocol.MSG_FRIEND_LIST,
+        'payload': {
+            'friends': friends,
+            'pending': pending,
+            'sent': sent
+        }
+    }, room=sid)
 
 def broadcast_users_list():
     online_usernames = list(set(clients.values()))

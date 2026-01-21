@@ -11,7 +11,7 @@ def main():
     print("Starting Nhom11 Chat Server (Socket.IO)...")
     port = int(os.environ.get('PORT', 8000))
     try:
-        socketio.run(app, host="0.0.0.0", port=port)
+        socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
     except KeyboardInterrupt:
         print("\nServer shutting down...")
 

@@ -172,6 +172,19 @@ class Database:
                     PRIMARY KEY (group_id, username)
                 )
             ''', cursor=cursor)
+
+            # Bảng friends
+            # status: 'pending', 'accepted'
+            self.execute_query(f'''
+                CREATE TABLE IF NOT EXISTS friends (
+                    user1 TEXT,
+                    user2 TEXT,
+                    status TEXT DEFAULT 'pending',
+                    created_at {datetime_def} DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user1, user2)
+                )
+            ''', cursor=cursor)
+
             
             # Indexes
             self.execute_query('CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp)', cursor=cursor) # PG defaults default to desc? or just timestamp
@@ -443,6 +456,114 @@ class Database:
     def get_all_users(self):
         cursor = self.execute_query("SELECT username, display_name FROM users WHERE is_active = 1")
         return [{'username': row['username'], 'display_name': row['display_name'] or row['username']} for row in cursor.fetchall()]
+
+    def request_friend(self, requester, target):
+        """Create a friend request. Stores as (lower, higher) for unicity or directional?"""
+        # Let's simple directional: user1 is requester, user2 is target for pending status
+        # Check if already friends or pending
+        try:
+            # Check existing relationship in either direction
+            cursor = self.execute_query('''
+                SELECT status FROM friends 
+                WHERE (user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?)
+            ''', (requester, target, target, requester))
+            row = cursor.fetchone()
+            if row:
+                return False, f"Relationship already exists: {row['status']}"
+
+            self.execute_query(
+                "INSERT INTO friends (user1, user2, status) VALUES (?, ?, 'pending')",
+                (requester, target)
+            )
+            self.conn.commit()
+            return True, "Request sent"
+        except Exception as e:
+            return False, str(e)
+
+    def accept_friend(self, accepter, requester):
+        """Accept a friend request"""
+        try:
+            # Update status where user1=requester AND user2=accepter
+            cursor = self.execute_query(
+                "UPDATE friends SET status = 'accepted' WHERE user1 = ? AND user2 = ? AND status = 'pending'",
+                (requester, accepter)
+            )
+            if cursor.rowcount > 0:
+                self.conn.commit()
+                return True
+            return False
+        except Exception:
+            self.conn.rollback()
+            return False
+
+    def get_friends_with_status(self, username):
+        """Get all accepted friends for a user, including their last_login"""
+        # Friends can be (user1=me, user2=them) OR (user1=them, user2=me)
+        query = '''
+            SELECT 
+                CASE WHEN f.user1 = ? THEN f.user2 ELSE f.user1 END as friend_name,
+                u.display_name,
+                u.last_login
+            FROM friends f
+            JOIN users u ON u.username = (CASE WHEN f.user1 = ? THEN f.user2 ELSE f.user1 END)
+            WHERE (f.user1 = ? OR f.user2 = ?) AND f.status = 'accepted'
+        '''
+        cursor = self.execute_query(query, (username, username, username, username))
+        result = []
+        for row in cursor.fetchall():
+            ts = row['last_login']
+            if isinstance(ts, datetime):
+                ts = ts.isoformat()
+            elif ts is None:
+                ts = ""
+                
+            result.append({
+                'username': row['friend_name'],
+                'display_name': row['display_name'] or row['friend_name'],
+                'last_login': ts
+            })
+        return result
+
+    def get_pending_requests(self, username):
+        """Get requests pending for this user (where user2 = username)"""
+        query = '''
+            SELECT f.user1 as requester, u.display_name
+            FROM friends f
+            JOIN users u ON u.username = f.user1
+            WHERE f.user2 = ? AND f.status = 'pending'
+        '''
+        cursor = self.execute_query(query, (username,))
+        return [{'username': row['requester'], 'display_name': row['display_name'] or row['requester']} for row in cursor.fetchall()]
+
+    def get_sent_requests(self, username):
+        """Get requests sent by this user (where user1 = username)"""
+        query = '''
+            SELECT f.user2 as target, u.display_name
+            FROM friends f
+            JOIN users u ON u.username = f.user2
+            WHERE f.user1 = ? AND f.status = 'pending'
+        '''
+        cursor = self.execute_query(query, (username,))
+        return [{'username': row['target'], 'display_name': row['display_name'] or row['target']} for row in cursor.fetchall()]
+    
+    def are_friends(self, user1, user2):
+        cursor = self.execute_query('''
+            SELECT 1 FROM friends 
+            WHERE ((user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?)) 
+            AND status = 'accepted'
+        ''', (user1, user2, user2, user1))
+        return cursor.fetchone() is not None
+
+    def update_last_seen(self, username):
+        """Update last_login timestamp now"""
+        try:
+            self.execute_query(
+                "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?",
+                (username,)
+            )
+            self.conn.commit()
+        except:
+            pass
 
     def close(self):
         if self.conn:
