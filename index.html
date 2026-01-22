@@ -2,7 +2,7 @@
 <html lang="vi">
 
 <head>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/3.1.3/socket.io.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Real-time</title>
@@ -1154,7 +1154,7 @@
                     </div>
 
                     <audio id="notifySound"
-                        src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
+                        src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAADA3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3g=="></audio>
 
                     <div class="messages-area" id="messages">
                         <div class="message system">Chào mừng đến với Nhom11 Chat Real-time!</div>
@@ -1229,7 +1229,11 @@
 
         <script>
             // --- CẤU HÌNH SERVER ---
-            const SERVER_URL = "https://nhom11-ungdungchatreal-time.onrender.com/";
+            // Tự động phát hiện môi trường để chọn SERVER_URL phù hợp
+            let SERVER_URL = "https://nhom11-ungdungchatreal-time.onrender.com/";
+            if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+                SERVER_URL = "http://localhost:8000/";
+            }
             let socket = null;
 
             let myName = "";
@@ -1432,6 +1436,14 @@
                         sendJson('GROUPS_REQUEST', null);
                         break;
                     case 'LOGIN_SUCCESS':
+                        // Nếu server trả về tên user, cập nhật lại myName
+                        if (data.payload && typeof data.payload === 'string') {
+                            // Tìm tên user trong chuỗi welcome
+                            const match = data.payload.match(/Welcome (\w+)!/);
+                            if (match && match[1]) {
+                                myName = match[1];
+                            }
+                        }
                         if (myName) {
                             const pass = document.getElementById('loginPass').value || '';
                             localStorage.setItem('chat_username', myName);
@@ -1915,6 +1927,11 @@
             }
 
             function openCreateGroupModal() {
+                // Nếu chưa đăng nhập, báo lỗi rõ ràng
+                if (!myName) {
+                    showToast("Bạn cần đăng nhập để tạo nhóm!");
+                    return;
+                }
                 if (!currentTarget || !currentTarget.startsWith('User:')) return;
 
                 const currentFriend = currentTarget.split(':')[1];
