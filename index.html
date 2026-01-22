@@ -1427,6 +1427,13 @@
                     case 'ERROR':
                         document.getElementById('authError').textContent = data.payload;
                         showToast(data.payload);
+                        // Nếu đang auto-login mà bị lỗi, xóa thông tin đăng nhập và hiển thị lại form
+                        if (localStorage.getItem('chat_username') && localStorage.getItem('chat_password')) {
+                            localStorage.removeItem('chat_username');
+                            localStorage.removeItem('chat_password');
+                            document.getElementById('authPanel').style.display = 'flex';
+                            document.getElementById('chatPanel').style.display = 'none';
+                        }
                         break;
                     case 'SUCCESS':
                         showToast(data.payload);
