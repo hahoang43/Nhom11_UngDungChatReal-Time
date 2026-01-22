@@ -839,65 +839,6 @@
             background: rgba(0, 0, 0, 0.05);
         }
 
-        /* --- MOBILE RESPONSIVE --- */
-        @media (max-width: 768px) {
-            body {
-                overflow: hidden;
-            }
-
-            .chat-container {
-                width: 100%;
-                height: 100vh;
-                border-radius: 0;
-                max-width: none;
-                flex-direction: row;
-            }
-
-            .sidebar {
-                width: 100%;
-                border-right: none;
-                z-index: 20;
-            }
-
-            .chat-main {
-                display: none;
-                width: 100%;
-                height: 100vh;
-                position: absolute;
-                top: 0;
-                left: 0;
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                z-index: 30;
-            }
-
-            .mobile-show-chat .sidebar {
-                display: none;
-            }
-
-            .mobile-show-chat .chat-main {
-                display: flex;
-            }
-
-            /* Hiện dưới dạng Flex */
-
-            .back-btn {
-                display: inline-flex !important;
-            }
-
-            .input-area {
-                padding: 10px 15px;
-            }
-
-            .chat-input {
-                border-radius: 20px;
-            }
-
-            .send-btn {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-            }
-        }
 
         .unread-badge {
             background-color: var(--danger);
