@@ -1410,6 +1410,10 @@
                 console.log("Recv:", data);
 
                 switch (data.type) {
+                    case 'USER_GROUPS':
+                        // data.payload là mảng id nhóm đã tham gia
+                        myGroups = new Set(data.payload);
+                        break;
                     case 'LOGIN_SUCCESS':
                         if (myName) {
                             const pass = document.getElementById('loginPass').value || '';
@@ -1940,15 +1944,13 @@
 
             function joinGroup(gid, gname) {
                 sendJson('GROUP_JOIN', gid);
-                // Optimistic update
-                myGroups.add(gid);
                 showToast(`Đã tham gia nhóm ${gname}`);
-
                 // Switch sidebar to chats view
                 switchSidebar('chats');
-
                 setTarget('Group', gid, gname);
-                // Re-render to update buttons
+                // Cập nhật lại danh sách nhóm đã tham gia từ server
+                sendJson('USER_GROUPS', null);
+                // Re-render để update nút join/leave
                 sendJson('GROUPS_REQUEST', null);
             }
 
@@ -1956,16 +1958,15 @@
                 if (!confirm("Bạn có chắc muốn rời nhóm?")) return;
                 sendJson('GROUP_LEAVE', gid);
 
-                // Optimistic update
-                myGroups.delete(gid);
-
                 if (currentTarget === `Group:${gid}`) {
                     currentTarget = null;
                     document.getElementById('chatMainContent').style.display = 'none';
                     document.getElementById('welcomeScreen').style.display = 'flex';
                 }
                 showToast("Đã rời nhóm");
-                // Re-render to update buttons
+                // Cập nhật lại danh sách nhóm đã tham gia từ server
+                sendJson('USER_GROUPS', null);
+                // Re-render để update nút join/leave
                 sendJson('GROUPS_REQUEST', null);
             }
 
