@@ -40,6 +40,8 @@ class ChatClient:
         def on_message(data):
             msg_type = data.get('type')
             payload = data.get('payload')
+            if msg_type == 'ERROR':
+                print(f"[LOG][ERROR message] {payload} | context=on_message | username={self.username}")
             if self.waiting_for_login:
                 if msg_type == 'LOGIN_SUCCESS':
                     self.waiting_for_login = False
@@ -49,7 +51,15 @@ class ChatClient:
                     self.waiting_for_login = False
                     if self.on_login_response:
                         self.on_login_response(False, payload)
-                    self.disconnect()
+                    # Chỉ disconnect nếu lỗi xác thực
+                    if isinstance(payload, str) and (
+                        'Chưa đăng nhập' in payload or
+                        'Invalid username or password' in payload or
+                        'hết hạn' in payload or
+                        'Tên đăng nhập đã tồn tại' in payload or
+                        'Đăng ký thất bại' in payload
+                    ):
+                        self.disconnect()
                 elif msg_type == protocol.MSG_TEXT:
                     if self.on_message_received:
                         self.on_message_received(payload)

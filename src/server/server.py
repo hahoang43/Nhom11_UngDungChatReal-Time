@@ -194,14 +194,14 @@ def handle_message(data):
     elif msg_type == protocol.MSG_PRIVATE:
         receiver = payload.get('receiver')
         content = payload.get('content')
-        
+
         # Check friendship
         if not db.are_friends(username, receiver):
-             emit('message', {'type': 'ERROR', 'payload': f"You are not friends with {receiver}. Add them to chat."})
-             return
+            emit('message', {'type': 'ERROR', 'payload': f"You are not friends with {receiver}. Add them to chat."})
+            return
 
         db.save_message(username, content, receiver=receiver, message_type='private')
-        
+
         target_sid = get_sid_by_username(receiver)
         if target_sid:
             emit('message', {
@@ -209,6 +209,7 @@ def handle_message(data):
                 'payload': {'sender': username, 'content': content}
             }, room=target_sid)
         else:
+            print(f"[SERVER][LOG] User '{receiver}' is offline. Sender: '{username}', content: '{content}'", flush=True)
             emit('message', {'type': 'ERROR', 'payload': f"User {receiver} is offline."})
 
     elif msg_type == protocol.MSG_GROUP:
@@ -225,30 +226,106 @@ def handle_message(data):
         history_type = payload.get('history_type')
         target = payload.get('target')
         if history_type == 'private' and target:
+            myName = payload.get('myName')
             history = db.get_history(50, message_type='private', username=target)
             print(f"DEBUG: Sending private history ({len(history)} items). First: {history[0]['timestamp'] if history else 'None'}, Last: {history[-1]['timestamp'] if history else 'None'}")
             for row in history: # Send in chronological order
-                emit('message', {
-                    'type': protocol.MSG_PRIVATE,
-                    'payload': {
-                        'sender': row['sender'],
-                        'receiver': row['receiver'],
-                        'content': row['content'],
-                        'timestamp': row['timestamp']
-                    }
-                })
+                content = row['content']
+                import re
+                if isinstance(content, str) and re.search(r"📎 File:", content, re.DOTALL):
+                    import re
+                    m = re.match(r"📎 File: (.+) \((.+)\)", content)
+                    filename, filesize_str = '', ''
+                    filesize = 0
+                    if m:
+                        filename = m.group(1)
+                        filesize_str = m.group(2)
+                        import re as _re
+                        size_match = _re.match(r"([\d\.]+)\s*(KB|MB|B)", filesize_str)
+                        if size_match:
+                            size_val = float(size_match.group(1))
+                            size_unit = size_match.group(2)
+                            if size_unit == 'KB':
+                                filesize = int(size_val * 1024)
+                            elif size_unit == 'MB':
+                                filesize = int(size_val * 1024 * 1024)
+                            elif size_unit == 'B':
+                                filesize = int(size_val)
+                    # Xác định lại receiver cho đúng chiều
+                    receiver = row['receiver']
+                    if not receiver and myName:
+                        if row['sender'] == myName:
+                            receiver = target
+                        else:
+                            receiver = myName
+                    elif not receiver:
+                        receiver = target
+                    emit('message', {
+                        'type': protocol.MSG_FILE,
+                        'payload': {
+                            'sender': row['sender'],
+                            'receiver': receiver,
+                            'filename': filename,
+                            'filesize': filesize,
+                            'message': content,
+                            'timestamp': row['timestamp']
+                        }
+                    })
+                else:
+                    emit('message', {
+                        'type': protocol.MSG_PRIVATE,
+                        'payload': {
+                            'sender': row['sender'],
+                            'receiver': row['receiver'],
+                            'content': row['content'],
+                            'timestamp': row['timestamp']
+                        }
+                    })
         elif history_type == 'group' and target:
             history = db.get_history(50, message_type='group', group_id=target)
             for row in history:
-                emit('message', {
-                    'type': protocol.MSG_GROUP,
-                    'payload': {
-                        'sender': row['sender'],
-                        'group_id': target,
-                        'content': row['content'],
-                        'timestamp': row['timestamp']
-                    }
-                })
+                content = row['content']
+                import re
+                if isinstance(content, str) and re.search(r"📎 File:", content, re.DOTALL):
+                    import re
+                    m = re.match(r"📎 File: (.+) \((.+)\)", content)
+                    filename, filesize_str = '', ''
+                    filesize = 0
+                    if m:
+                        filename = m.group(1)
+                        filesize_str = m.group(2)
+                        import re as _re
+                        size_match = _re.match(r"([\d\.]+)\s*(KB|MB|B)", filesize_str)
+                        if size_match:
+                            size_val = float(size_match.group(1))
+                            size_unit = size_match.group(2)
+                            if size_unit == 'KB':
+                                filesize = int(size_val * 1024)
+                            elif size_unit == 'MB':
+                                filesize = int(size_val * 1024 * 1024)
+                            elif size_unit == 'B':
+                                filesize = int(size_val)
+                    emit('message', {
+                        'type': protocol.MSG_FILE,
+                        'payload': {
+                            'sender': row['sender'],
+                            'group_id': target,
+                            'filename': filename,
+                            'filesize': filesize,
+                            'message': content,
+                            'timestamp': row['timestamp']
+                        }
+                    })
+                else:
+                    emit('message', {
+                        'type': protocol.MSG_GROUP,
+                        'payload': {
+                            'sender': row['sender'],
+                            'group_id': target,
+                            'content': row['content'],
+                            'timestamp': row['timestamp']
+                        }
+                    })
 
     elif msg_type == protocol.MSG_GROUP_CREATE:
         group_name = ""
@@ -377,20 +454,51 @@ def handle_message(data):
             info['file'].close()
             filename = info['filename']
             filesize = info['filesize']
-            
+            receiver = info.get('receiver')
+            # Xác định context gửi file: public, private, group
+            # Nếu receiver là số (int/str digit) => group, nếu là tên user => private, nếu None => public
             file_msg = f"📎 File: {filename} ({format_file_size(filesize)})"
-            db.save_message(username, file_msg, message_type='public')
-            
-            broadcast_msg = {
-                'type': protocol.MSG_FILE,
-                'payload': {
-                    'sender': username,
-                    'filename': filename,
-                    'filesize': filesize,
-                    'message': f"{username} đã gửi file: {filename}"
+            if receiver is None:
+                db.save_message(username, file_msg, message_type='public')
+                broadcast_msg = {
+                    'type': protocol.MSG_FILE,
+                    'payload': {
+                        'sender': username,
+                        'filename': filename,
+                        'filesize': filesize,
+                        'message': f"{username} đã gửi file: {filename}"
+                    }
                 }
-            }
-            emit('message', broadcast_msg, broadcast=True)
+                emit('message', broadcast_msg, broadcast=True)
+            elif str(receiver).isdigit():
+                db.save_message(username, file_msg, receiver=receiver, message_type='group')
+                broadcast_msg = {
+                    'type': protocol.MSG_FILE,
+                    'payload': {
+                        'sender': username,
+                        'filename': filename,
+                        'filesize': filesize,
+                        'group_id': int(receiver),
+                        'message': f"{username} đã gửi file: {filename}"
+                    }
+                }
+                emit('message', broadcast_msg, room=f"group_{receiver}")
+            else:
+                db.save_message(username, file_msg, receiver=receiver, message_type='private')
+                # Gửi cho cả 2 phía (sender và receiver)
+                for u in [username, receiver]:
+                    target_sid = get_sid_by_username(u)
+                    if target_sid:
+                        emit('message', {
+                            'type': protocol.MSG_FILE,
+                            'payload': {
+                                'sender': username,
+                                'filename': filename,
+                                'filesize': filesize,
+                                'receiver': receiver,
+                                'message': f"{username} đã gửi file: {filename}"
+                            }
+                        }, room=target_sid)
             del file_transfers[sid]
 
     elif msg_type == protocol.MSG_TYPING:

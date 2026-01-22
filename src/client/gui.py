@@ -242,14 +242,13 @@ class ChatGUI:
         """Switches current chat target"""
         self.current_target = target
         display_name = target
-            if target.startswith("User:"):
-                display_name = f"👤 {target[5:]}"
-            elif target.startswith("Group:"):
-                group_id = target[6:]
-                display_name = f"👥 Nhóm {group_id}"
-            else:
-                display_name = ""
-            
+        if target.startswith("User:"):
+            display_name = f"👤 {target[5:]}"
+        elif target.startswith("Group:"):
+            group_id = target[6:]
+            display_name = f"👥 Nhóm {group_id}"
+        else:
+            display_name = ""
         self.target_label.config(text=display_name)
         # In a real app, we would clear chat area and load history for this target
         self.display_message(f"--- Bạn đang chat ở: {display_name} ---", "server_msg")

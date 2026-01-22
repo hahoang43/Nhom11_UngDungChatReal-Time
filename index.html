@@ -1256,10 +1256,17 @@
                     fileInput.addEventListener('change', async function (e) {
                         const file = e.target.files[0];
                         if (!file || !socket || !socket.connected) return;
+                        // Xác định receiver dựa vào currentTarget
+                        let receiver = null;
+                        if (currentTarget && currentTarget.startsWith('User:')) {
+                            receiver = currentTarget.substring(5); // tên user
+                        } else if (currentTarget && currentTarget.startsWith('Group:')) {
+                            receiver = currentTarget.substring(6); // group_id
+                        }
                         sendJson('FILE_REQUEST', {
                             filename: file.name,
                             filesize: file.size,
-                            receiver: null
+                            receiver: receiver
                         });
                         let chunkNum = 0;
                         const reader = new FileReader();
@@ -1452,15 +1459,40 @@
                         enterChatMode();
                         break;
                     case 'ERROR':
-                        document.getElementById('authError').textContent = data.payload;
-                        showToast(data.payload);
-                        // Nếu đang auto-login mà bị lỗi, xóa thông tin đăng nhập và hiển thị lại form
-                        if (localStorage.getItem('chat_username') && localStorage.getItem('chat_password')) {
-                            localStorage.removeItem('chat_username');
-                            localStorage.removeItem('chat_password');
-                            document.getElementById('authPanel').style.display = 'flex';
-                            document.getElementById('chatPanel').style.display = 'none';
+                        // Chỉ hiển thị lỗi lên #authError nếu là lỗi xác thực đăng nhập/đăng ký
+                        const authErrorKeywords = [
+                            'Chưa đăng nhập',
+                            'Invalid username or password',
+                            'hết hạn',
+                            'Tên đăng nhập đã tồn tại',
+                            'Đăng ký thất bại',
+                            'Sai mật khẩu',
+                            'Không thể kết nối',
+                            'Vui lòng nhập đầy đủ thông tin',
+                            'Mật khẩu không khớp'
+                        ];
+                        let showAuthError = false;
+                        for (const kw of authErrorKeywords) {
+                            if (typeof data.payload === 'string' && data.payload.includes(kw)) {
+                                showAuthError = true;
+                                break;
+                            }
                         }
+                        if (showAuthError) {
+                            document.getElementById('authError').textContent = data.payload;
+                            // Nếu đang auto-login mà bị lỗi xác thực, xóa thông tin đăng nhập và hiển thị lại form
+                            if (localStorage.getItem('chat_username') && localStorage.getItem('chat_password')) {
+                                localStorage.removeItem('chat_username');
+                                localStorage.removeItem('chat_password');
+                                document.getElementById('authPanel').style.display = 'flex';
+                                document.getElementById('chatPanel').style.display = 'none';
+                            }
+                        } else {
+                            document.getElementById('authError').textContent = '';
+                        }
+                        showToast(data.payload);
+                        // Thêm log kiểm tra lỗi disconnect khi gửi tin cho user offline
+                        console.warn('[LOG][ERROR message]', data.payload, {context: 'handleServerMessage', currentTarget, myName});
                         break;
                     case 'SUCCESS':
                         showToast(data.payload);
@@ -1511,22 +1543,34 @@
                         const file = data.payload;
                         const fileUrl = `${SERVER_URL}/download?filename=${encodeURIComponent(file.filename)}`;
                         let fileMsg = "";
-                        const ext = file.filename.split('.').pop().toLowerCase();
+                        const ext = file.filename ? file.filename.split('.').pop().toLowerCase() : '';
 
                         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                            fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><img src="${fileUrl}" class="media-preview" onclick="window.open('${fileUrl}', '_blank')">`;
+                            fileMsg = `<div style="font-weight:600;margin-bottom:4px;background:rgba(255,255,255,0.85);color:#3b3b3b;padding:6px 12px;border-radius:8px;box-shadow:0 2px 8px #0001;display:inline-block;max-width:90%;word-break:break-all;border:1.5px solid #6366f1;">📎 ${file.filename}</div><img src="${fileUrl}" class="media-preview" onclick="window.open('${fileUrl}', '_blank')">`;
                         } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
-                            fileMsg = `<div style="font-weight:600;margin-bottom:4px">📎 ${file.filename}</div><video src="${fileUrl}" controls class="media-preview" style="max-height: 200px"></video>`;
+                            fileMsg = `<div style="font-weight:600;margin-bottom:4px;background:rgba(255,255,255,0.85);color:#3b3b3b;padding:6px 12px;border-radius:8px;box-shadow:0 2px 8px #0001;display:inline-block;max-width:90%;word-break:break-all;border:1.5px solid #6366f1;">📎 ${file.filename}</div><video src="${fileUrl}" controls class="media-preview" style="max-height: 200px"></video>`;
                         } else {
-                            fileMsg = `<a href="${fileUrl}" target="_blank" style="color:#6366f1;font-weight:600;text-decoration:underline">📎 ${file.filename}</a> (${(file.filesize / 1024).toFixed(1)} KB)`;
+                            fileMsg = `<a href="${fileUrl}" target="_blank" style="background:rgba(255,255,255,0.85);color:#3b3b3b;font-weight:600;text-decoration:underline;padding:6px 12px;border-radius:8px;box-shadow:0 2px 8px #0001;display:inline-block;max-width:90%;word-break:break-all;border:1.5px solid #6366f1;">📎 ${file.filename}</a> <span style='color:#6366f1;font-size:0.95em'>(${(file.filesize / 1024).toFixed(1)} KB)</span>`;
                         }
 
-                        const isMe = (file.sender === myName);
-                        // Hiển thị nếu đang ở đúng khung chat
-                        // Cần logic server trả về receiver/group_id để check, ở đây giả định server broadcast đúng
-                        // Simplified: just append if it looks like current context or just ignore context check for now
-                        appendMessage(fileMsg, isMe ? 'sent' : 'received', file.sender || 'File');
-                        if (!isMe) playSound();
+                        // Hiển thị file đúng context
+                        let showFile = false;
+                        if (file.group_id) {
+                            // File group
+                            if (currentTarget === `Group:${file.group_id}`) showFile = true;
+                        } else if (file.receiver) {
+                            // File private
+                            const partner = (file.sender === myName) ? file.receiver : file.sender;
+                            if (currentTarget === `User:${partner}`) showFile = true;
+                        } else {
+                            // File public (nếu có)
+                            showFile = true;
+                        }
+                        if (showFile) {
+                            const isMe = (file.sender === myName);
+                            appendMessage(fileMsg, isMe ? 'sent' : 'received', file.sender || 'File');
+                            if (!isMe) playSound();
+                        }
                         break;
                     case 'TYPING':
                         handleTyping(data.payload, true);
@@ -1541,6 +1585,13 @@
                         break;
                     case 'USERS_LIST':
                         renderUsers(data.payload);
+                        // Cập nhật lại tên hiển thị nếu có user trùng với myName
+                        if (myName) {
+                            const me = data.payload.find(u => u.username === myName);
+                            if (me && me.display_name) {
+                                document.getElementById('myNameDisplay').textContent = me.display_name;
+                            }
+                        }
                         break;
                     case 'GROUPS_LIST':
                         renderGroups(data.payload);
@@ -1842,7 +1893,9 @@
 
                     let actions = '';
                     if (isMember) {
-                        actions += `<button class="action-btn btn-leave" onclick="leaveGroup(${g.id})">Rời nhóm</button>`;
+                        if (!isCreator) {
+                            actions += `<button class="action-btn btn-leave" onclick="leaveGroup(${g.id})">Rời nhóm</button>`;
+                        }
                         if (isCreator) {
                             actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
                         }
@@ -2083,8 +2136,8 @@
                 document.getElementById('messages').innerHTML = '';
 
                 // Fetch History
-                if (type === 'User') sendJson('HISTORY_REQUEST', { history_type: 'private', target: id });
-                else if (type === 'Group') sendJson('HISTORY_REQUEST', { history_type: 'group', target: id });
+                if (type === 'User') sendJson('HISTORY_REQUEST', { history_type: 'private', target: id, myName });
+                else if (type === 'Group') sendJson('HISTORY_REQUEST', { history_type: 'group', target: id, myName });
 
                 appendMessage(`--- Bắt đầu cuộc trò chuyện với ${name} ---`, 'system');
 
