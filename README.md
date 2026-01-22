@@ -18,7 +18,12 @@ pip install -r requirements.txt
 Yêu cầu Python >= 3.8
 
 ## 3. Hướng Dẫn Chạy
-### Chạy Server
+### Chạy Server (khuyến nghị - hỗ trợ WebSocket)
+```bash
+gunicorn --worker-class eventlet -w 1 -b 0.0.0.0:10000 src.server.server:app
+```
+
+### Chạy Server (dev, KHÔNG hỗ trợ WebSocket chuẩn)
 ```bash
 cd src/server
 python main.py
