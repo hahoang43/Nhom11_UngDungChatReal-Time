@@ -318,6 +318,17 @@ def handle_message(data):
         if db.remove_member_from_group(group_id, username):
             leave_room(f"group_{group_id}")
             emit('message', {'type': 'SUCCESS', 'payload': f"Left group {group_id}"})
+            # Gửi lại danh sách nhóm đã tham gia
+            user_groups = db.get_user_groups(username)
+            u_gids = [ug['id'] for ug in user_groups]
+            emit('message', {'type': 'USER_GROUPS', 'payload': u_gids})
+            # Gửi lại danh sách nhóm khám phá (chưa tham gia)
+            discoverable = db.get_discoverable_groups(username)
+            for g in discoverable:
+                for k, v in g.items():
+                    if hasattr(v, 'isoformat'):
+                        g[k] = v.isoformat()
+            emit('message', {'type': protocol.MSG_GROUPS_LIST, 'payload': discoverable}, room=sid)
         else:
             emit('message', {'type': 'ERROR', 'payload': "Failed to leave group"})
 

@@ -1319,7 +1319,10 @@
                 const savedPass = localStorage.getItem('chat_password');
                 if (savedUser) document.getElementById('loginUser').value = savedUser;
                 if (savedPass) document.getElementById('loginPass').value = savedPass;
-                if (savedUser && savedPass) handleAuth('LOGIN', true);
+                if (savedUser && savedPass) {
+                    document.getElementById('authError').textContent = 'Đang đăng nhập...';
+                    handleAuth('LOGIN', true);
+                }
             });
 
             // --- Auth UI Logic ---
