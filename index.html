@@ -1385,8 +1385,8 @@
                     });
                     socket.on('disconnect', () => {
                         if (document.getElementById('chatPanel').style.display === 'flex') {
-                            showToast("Đã mất kết nối với Server");
-                            setTimeout(() => location.reload(), 2000);
+                            showToast("Đã mất kết nối với Server. Vui lòng kiểm tra lại kết nối hoặc đăng nhập lại.");
+                            // Không tự động reload trang nữa
                         }
                     });
                     socket.on('message', (data) => handleServerMessage(data));
