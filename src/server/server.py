@@ -90,7 +90,8 @@ def handle_message(data):
         # Lấy username từ clients mapping
         username = clients.get(sid)
         if username:
-            groups = db.get_discoverable_groups(username)
+            # Trả về các nhóm user đã tham gia (tab Trò chuyện)
+            groups = db.get_user_groups(username)
         else:
             groups = db.get_all_groups()  # fallback nếu chưa đăng nhập
         # Convert datetime fields to string
@@ -271,7 +272,7 @@ def handle_message(data):
         if group_id:
             db.add_member_to_group(group_id, username)
             join_room(f"group_{group_id}")
-            
+
             # Add other members
             for m in members_to_add:
                 if m != username:
@@ -281,8 +282,6 @@ def handle_message(data):
                             join_room(f"group_{group_id}", sid=m_sid)
                             emit('message', {'type': 'SUCCESS', 'payload': f"Bạn đã được thêm vào nhóm '{group_name}'"}, room=m_sid)
                             # Update their group list mapping
-                            # Ideally we should send USER_GROUPS to them, but broadcast_groups + join_room allows them to receive messages
-                            # Sending USER_GROUPS for consistency if client relies on it for mapping
                             user_groups = db.get_user_groups(m)
                             u_gids = [ug['id'] for ug in user_groups]
                             emit('message', {'type': 'USER_GROUPS', 'payload': u_gids}, room=m_sid)
@@ -291,6 +290,15 @@ def handle_message(data):
             user_groups = db.get_user_groups(username)
             u_gids = [ug['id'] for ug in user_groups]
             emit('message', {'type': 'USER_GROUPS', 'payload': u_gids})
+
+            # Gửi lại danh sách nhóm đầy đủ cho người tạo nhóm (để cập nhật tab Trò chuyện)
+            all_groups = db.get_all_groups()
+            # Convert datetime fields to string
+            for g in all_groups:
+                for k, v in g.items():
+                    if hasattr(v, 'isoformat'):
+                        g[k] = v.isoformat()
+            emit('message', {'type': protocol.MSG_GROUPS_LIST, 'payload': all_groups}, room=sid)
 
             emit('message', {'type': 'SUCCESS', 'payload': f"Group '{group_name}' created"})
             broadcast_groups_list()

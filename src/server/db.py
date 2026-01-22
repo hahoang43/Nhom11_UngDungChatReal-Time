@@ -16,6 +16,27 @@ except ImportError:
 DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../data/chat.db'))
 
 class Database:
+    def get_all_groups(self):
+        """
+        Trả về tất cả các nhóm (trừ nhóm công khai nếu muốn).
+        """
+        cursor = self.execute_query('''
+            SELECT id, name, creator, created_at
+            FROM groups
+        ''')
+        rows = cursor.fetchall()
+        result = []
+        for row in rows:
+            ts = row['created_at']
+            if isinstance(ts, datetime):
+                ts = ts.strftime('%Y-%m-%d %H:%M:%S')
+            result.append({
+                'id': row['id'],
+                'name': row['name'],
+                'creator': row['creator'],
+                'created_at': ts
+            })
+        return result
     def delete_group(self, group_id, username):
         """Delete a group if the user is the creator. Removes group, its members, and messages."""
         try:

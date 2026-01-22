@@ -1413,6 +1413,8 @@
                     case 'USER_GROUPS':
                         // data.payload là mảng id nhóm đã tham gia
                         myGroups = new Set(data.payload);
+                        // Sau khi cập nhật myGroups, gửi yêu cầu lấy lại danh sách nhóm để cập nhật UI
+                        sendJson('GROUPS_REQUEST', null);
                         break;
                     case 'LOGIN_SUCCESS':
                         if (myName) {
