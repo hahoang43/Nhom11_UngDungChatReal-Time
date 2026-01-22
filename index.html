@@ -1410,7 +1410,7 @@
 
             function handleServerMessage(data) {
                 if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { } }
-                console.log("Recv:", data);
+                console.log("[DEBUG][Recv message from server]", data);
 
                 switch (data.type) {
                     case 'USER_GROUPS':
