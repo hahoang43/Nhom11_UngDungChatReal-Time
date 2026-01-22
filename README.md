@@ -1,49 +1,42 @@
 # Nhom11_UngDungChatReal-Time
 
-Ứng dụng chat real-time với giao diện web, hỗ trợ nhắn tin riêng, nhóm, gửi file, và hệ thống bạn bè.
+Ứng dụng chat real-time hỗ trợ giao tiếp tức thời giữa nhiều người dùng, chạy được trên web (HTML/JS demo). Hệ thống sử dụng Socket.IO/WebSocket, hỗ trợ chat công khai, riêng tư, truyền file, quản lý nhóm, đồng bộ lịch sử chat qua export/import.
 
-## 1. Cài Đặt
+---
 
-Yêu cầu: Python 3.8+
+## 1. Tổng Quan
+- **Ngôn ngữ:** Python 3.8+, HTML/JS (web demo)
+- **Backend:** Flask, Flask-SocketIO, Eventlet
+- **Database:** SQLite (mặc định), hỗ trợ PostgreSQL
+- **Giao tiếp:** Socket.IO/WebSocket, JSON
 
-Cài đặt các thư viện cần thiết:
-```bash
-python -m pip install -r requirements.txt
-```
-
-Nếu muốn chạy test tự động, cài thêm:
-```bash
-python -m pip install requests
-```
-
-## 2. Chạy Server
-
-Server sẽ chạy mặc định tại cổng `8000`.
+## 2. Cài Đặt
 
 ```bash
-# Từ thư mục gốc của dự án
-python src/server/main.py
+pip install -r requirements.txt
 ```
+Yêu cầu Python >= 3.8
 
-Khi chạy thành công, bạn sẽ thấy thông báo:
-> Running on http://0.0.0.0:8000
+## 3. Hướng Dẫn Chạy
+### Chạy Server
+```bash
+cd src/server
+python main.py
+```
+### Chạy Client Desktop
+```bash
+cd src/client
+python main.py
+```
+### Chạy Web Client (demo)
+Mở file `index.html` trong trình duyệt web.
 
-## 3. Chạy Client
-
-### Option A: Giao diện Web (Khuyên dùng)
-Mở file `index.html` (nằm ở thư mục gốc) bằng trình duyệt web bất kỳ.
 
 > **Lưu ý**: Có thể mở nhiều tab để chat với nhau.
 
-### Option B: Giao diện Desktop (Python/Tkinter)
-Nếu bạn muốn chạy ứng dụng desktop:
-```bash
-# Từ thư mục gốc
-python src/client/main.py
-```
-*Lưu ý: Giao diện desktop có thể chưa cập nhật đầy đủ các tính năng mới (như Friend System) so với bản Web.*
 
-## 4. Tính Năng Chính
+
+## 3. Tính Năng Chính
 
 - **Hệ thống Bạn Bè**:
     - Gửi lời mời kết bạn (Tab "Khám phá").
@@ -55,22 +48,3 @@ python src/client/main.py
     - Gửi file đính kèm.
     - Emoji picker.
     - Thông báo tin nhắn chưa đọc.
-
-## 5. Chạy Kiểm Thử (Testing)
-
-Để kiểm tra tự động luồng kết bạn (Friend Flow):
-
-1. Đảm bảo server đang chạy tại port 8000.
-2. Chạy script test:
-```bash
-python tests/verify_friend_flow.py
-```
-Script sẽ tự động tạo 2 user (`alice_test`, `bob_test`) và mô phỏng quá trình kết bạn, chat để xác minh hệ thống hoạt động đúng.
-
-## 6. Cấu Trúc Dự Án
-
-- `src/server/`: Mã nguồn server (Python/Flask-SocketIO).
-- `src/common/`: Các định nghĩa dùng chung (Message Protocol).
-- `index.html`: Giao diện chính của Web Client.
-- `requirements.txt`: Danh sách thư viện phụ thuộc.
-- `tests/`: Các script kiểm thử tự động.

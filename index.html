@@ -1792,6 +1792,7 @@
                     }
                 });
 
+                // Hiển thị nhóm đã tham gia/tạo ở tab của tôi, nhóm chưa tham gia ở tab khám phá
                 uniqueGroups.forEach(g => {
                     const isMember = myGroups.has(g.id);
                     const isActive = currentTarget === `Group:${g.id}`;
@@ -1799,37 +1800,42 @@
                     const key = `Group:${g.id}`;
                     const unread = unreadCounts[key] || 0;
 
-                    const div = document.createElement('div');
-                    // Style differently if in discovery vs joined?
-                    // But here we just use same list-item style
-                    div.className = `list-item ${isActive ? 'active' : ''}`;
-                    div.setAttribute('data-key', key);
-
                     let actions = '';
                     if (isMember) {
                         actions += `<button class="action-btn btn-leave" onclick="leaveGroup(${g.id})">Rời nhóm</button>`;
-                    } else {
-                        actions += `<button class="action-btn btn-join" onclick="joinGroup(${g.id}, '${g.name}')">Tham gia</button>`;
-                    }
-
-                    if (isCreator) {
-                        actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
-                    }
-
-                    div.innerHTML = `
-                    <div class="item-info" ${isMember ? `onclick=\"setTarget('Group', '${g.id}', '${g.name}')\"` : ''} style="${isMember ? '' : 'cursor:default;'}">
-                        <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: var(--secondary);">
-                            <i class="fa-solid fa-users"></i>
-                        </div>
-                        <span>${g.name}</span>
-                        ${isMember && unread > 0 ? `<div class="unread-badge">${unread > 99 ? '99+' : unread}</div>` : ''}
-                    </div>
-                    <div class="item-actions">${actions}</div>
-                `;
-
-                    if (isMember) {
+                        if (isCreator) {
+                            actions += `<button class="action-btn" style="background:rgba(239,68,68,0.1);color:var(--danger);" onclick="deleteGroup(${g.id}, '${g.name}')">Xóa</button>`;
+                        }
+                        // Tab của tôi
+                        const div = document.createElement('div');
+                        div.className = `list-item${isActive ? ' active' : ''}`;
+                        div.setAttribute('data-key', key);
+                        div.innerHTML = `
+                            <div class="item-info" onclick="setTarget('Group', '${g.id}', '${g.name}')">
+                                <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: var(--secondary);">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                                <span>${g.name}</span>
+                                ${unread > 0 ? `<div class="unread-badge">${unread > 99 ? '99+' : unread}</div>` : ''}
+                            </div>
+                            <div class="item-actions">${actions}</div>
+                        `;
                         if (joinedContainer) joinedContainer.appendChild(div);
                     } else {
+                        actions += `<button class="action-btn btn-join" onclick="joinGroup(${g.id}, '${g.name}')">Tham gia</button>`;
+                        // Tab khám phá
+                        const div = document.createElement('div');
+                        div.className = 'list-item';
+                        div.setAttribute('data-key', key);
+                        div.innerHTML = `
+                            <div class="item-info">
+                                <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: var(--secondary);">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                                <span>${g.name}</span>
+                            </div>
+                            <div class="item-actions">${actions}</div>
+                        `;
                         if (connectContainer) connectContainer.appendChild(div);
                     }
                 });
@@ -1873,7 +1879,11 @@
 
             function createNewGroup() {
                 const name = prompt("Nhập tên nhóm mới:");
-                if (name) sendJson('GROUP_CREATE', name);
+                if (name) {
+                    sendJson('GROUP_CREATE', name);
+                    // Gửi yêu cầu cập nhật lại danh sách nhóm
+                    sendJson('GROUPS_REQUEST', null);
+                }
             }
 
             function openCreateGroupModal() {
