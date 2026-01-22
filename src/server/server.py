@@ -87,7 +87,12 @@ def handle_message(data):
     payload = data.get('payload')
 
     if msg_type == 'GROUPS_REQUEST':
-        groups = db.get_all_groups()
+        # Lấy username từ clients mapping
+        username = clients.get(sid)
+        if username:
+            groups = db.get_discoverable_groups(username)
+        else:
+            groups = db.get_all_groups()  # fallback nếu chưa đăng nhập
         # Convert datetime fields to string
         for g in groups:
             for k, v in g.items():

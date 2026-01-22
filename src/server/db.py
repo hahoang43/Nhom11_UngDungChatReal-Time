@@ -445,8 +445,19 @@ class Database:
             })
         return result
 
-    def get_all_groups(self):
-        cursor = self.execute_query("SELECT id, name, creator, created_at FROM groups WHERE LOWER(name) NOT IN ('chat công khai', 'public chat', 'public', 'công khai')")
+
+    def get_discoverable_groups(self, username):
+        """
+        Trả về các nhóm mà user chưa tham gia (ngoại trừ nhóm công khai).
+        """
+        cursor = self.execute_query('''
+            SELECT g.id, g.name, g.creator, g.created_at
+            FROM groups g
+            WHERE LOWER(g.name) NOT IN ('chat công khai', 'public chat', 'public', 'công khai')
+            AND g.id NOT IN (
+                SELECT group_id FROM group_members WHERE username = ?
+            )
+        ''', (username,))
         return [dict(row) for row in cursor.fetchall()]
 
     def get_group_members(self, group_id):
