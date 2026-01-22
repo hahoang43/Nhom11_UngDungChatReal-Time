@@ -1241,6 +1241,7 @@
             let unreadCounts = {};
             let lastUsersList = [];
             let typingTimeout = null;
+            let loginTimeout = null;
             const CHUNK_SIZE = 4096;
 
             // --- Init Listeners ---
@@ -1385,6 +1386,13 @@
                     socket.on('connect', () => {
                         sendJson(type, { username, password });
                         myName = username;
+                        // Đặt timeout đăng nhập (15s)
+                        if (type === 'LOGIN') {
+                            if (loginTimeout) clearTimeout(loginTimeout);
+                            loginTimeout = setTimeout(() => {
+                                document.getElementById('authError').textContent = "Không thể kết nối server hoặc server đang khởi động. Vui lòng thử lại sau!";
+                            }, 15000);
+                        }
                     });
                     socket.on('disconnect', () => {
                         if (document.getElementById('chatPanel').style.display === 'flex') {
@@ -1412,6 +1420,10 @@
                 if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { } }
                 console.log("[DEBUG][Recv message from server]", data);
 
+                // Nếu nhận được LOGIN_SUCCESS hoặc ERROR thì clear timeout đăng nhập
+                if (data.type === 'LOGIN_SUCCESS' || data.type === 'ERROR') {
+                    if (loginTimeout) clearTimeout(loginTimeout);
+                }
                 switch (data.type) {
                     case 'USER_GROUPS':
                         // data.payload là mảng id nhóm đã tham gia
